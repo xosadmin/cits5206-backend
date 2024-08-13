@@ -105,7 +105,26 @@ def doaddnote():
 
 @app.route("/getnote", methods=["GET"])
 def dogetnote():
-    token = request.form.get('tokenID', Null)
+    tokenContent = request.form.get('tokenID', Null)
+    userID = mapTokenUser(tokenContent)
+    noteID = request.form.get('noteID', Null)
+    if userID and noteID:
+        query = Notes.query.filter(Notes.noteID == noteID, Notes.userID == userID).first()
+        if query:
+            result = {
+                    "NoteID": query.noteID,
+                    "Content": query.content,
+                    "DateCreated": query.dateCreated
+                }
+            
+            return jsonify(result)
+        else:
+            return jsonify({"Result": 0})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+            
+                
+
 
 @app.route("/search", methods=["GET"])
 def dosearch():
