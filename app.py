@@ -56,5 +56,37 @@ def doRegister():
     else:
         return jsonify({"Status": "Error", "Detailed Info": "User already exists!"})
 
+
+@app.route("/addnote", methods=["POST"])
+def doaddnote():
+    token = request.form.get('tokenID', 'NA')
+    content = request.form.get('content', 'NA')
+    noteid = uuidGen()
+    datecreated = 0
+    newNote = Notes(noteID = noteid, userID = token, dateCreated = datecreated, content = content)
+    db.session.add(newNote)
+    db.session.commit()
+    return jsonify({"Status": True, "noteID": noteid})
+
+    
+
+    
+
+
+
+
+@app.route("/getnote", methods=["GET"])
+def dogetnote():
+    token = request.form.get('tokenID','NA')
+
+
+
+@app.route("/search", methods=["GET"])
+def dosearch():
+    
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
+

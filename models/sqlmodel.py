@@ -16,3 +16,14 @@ class Tokens(db.Model):
     userID = db.Column(db.Integer, ForeignKey('users.userID'), nullable=False)
     token = db.Column(db.String(256), unique=True, nullable=False)
     dateIssue = db.Column(db.DateTime, nullable=False)
+
+class Notes(db.Model):
+    __tablename__ = 'notes'
+    noteID = db.Column(db.String(256), primary_key=True)
+    userID = db.Column(db.String(256), ForeignKey('users.userID'), nullable=False)
+    dateCreated = db.Column(db.DateTime, nullable=False)
+    content = db.Column(db.VARCHAR(65535), nullable =False)
+
+    
+
+    
