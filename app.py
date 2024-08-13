@@ -152,28 +152,14 @@ def dosearch():
     if userID and searchQuery:
         try:
             podcasts = Podcasts.query.filter(Podcasts.podName.like(f"%{searchQuery}%")).all()
-            snippets = Snippets.query.filter(Snippets.snippetContent.like(f"%{searchQuery}%")).all()
-            result = {
-                "Podcasts": [],
-                "Snippets": []
-            }
+            result = []
             for podcast in podcasts:
-                result["Podcasts"].append({
+                result.append({
                     "PodcastID": podcast.podID,
                     "PodcastName": podcast.podName,
                     "PodcastURL": podcast.podUrl
-
                 })
-
-            for snippet in snippets:
-                result["Snippets"].append({
-                    "SnippetID": snippet.snipID,
-                    "PodcastID": snippet.podID,
-                    "Content": snippet.snippetContent
-
-                })
-            
-            return jsonify({"Status": True, "Results": result})
+            return jsonify(result)
         except Exception as e:
             return jsonify({"Status": False, "Detailed Info": "Search failed. Internal Error occurred."})
     else:
