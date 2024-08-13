@@ -22,9 +22,11 @@ CREATE TABLE `tokens` (
 CREATE TABLE `notes` (
     `noteID` VARCHAR(256) PRIMARY KEY,
     `userID` VARCHAR(256) NOT NULL,
+    `podID` VARCHAR(256) NOT NULL,
     `dateCreated` VARCHAR(256) NOT NULL,
     `content` TEXT NOT NULL,
-    FOREIGN KEY (`userID`) REFERENCES `users`(`userID`)
+    FOREIGN KEY (`userID`) REFERENCES `users`(`userID`),
+    FOREIGN KEY (`podID`) REFERENCES `podcasts`(`podID`)
 );
 
 -- Create `library` table

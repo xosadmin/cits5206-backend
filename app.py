@@ -89,12 +89,13 @@ def changePswd():
 def doaddnote():
     tokenContent = request.form.get('tokenID', Null)
     content = request.form.get('content', Null)
+    podid = request.form.get('podid', Null)
     noteid = uuidGen()
     datecreated = getTime()
     userID = mapTokenUser(tokenContent)
     if userID and tokenContent and content:
         try:
-            newNote = Notes(noteID = noteid, userID=userID, dateCreated = datecreated, content = content)
+            newNote = Notes(noteID = noteid, userID=userID, dateCreated = datecreated, content = content, podID=podid)
             db.session.add(newNote)
             db.session.commit()
             return jsonify({"Status": True, "noteID": noteid})
@@ -103,7 +104,26 @@ def doaddnote():
     else:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
-@app.route("/getnote", methods=["GET"])
+@app.route("/listnotes", methods=["GET"])
+def dogetnote():
+    tokenContent = request.form.get('tokenID', Null)
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        query = Notes.query.filter(Notes.userID == userID).first()
+        if query:
+            result = {
+                    "NoteID": query.noteID,
+                    "PodcastID": query.podID,
+                    "DateCreated": query.dateCreated
+                }
+            
+            return jsonify(result)
+        else:
+            return jsonify({"Result": 0})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+
+@app.route("/getnotedetails", methods=["GET"])
 def dogetnote():
     tokenContent = request.form.get('tokenID', Null)
     userID = mapTokenUser(tokenContent)
@@ -113,6 +133,7 @@ def dogetnote():
         if query:
             result = {
                     "NoteID": query.noteID,
+                    "PodcastID": query.podID,
                     "Content": query.content,
                     "DateCreated": query.dateCreated
                 }
@@ -122,9 +143,6 @@ def dogetnote():
             return jsonify({"Result": 0})
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
-            
-                
-
 
 @app.route("/search", methods=["GET"])
 def dosearch():

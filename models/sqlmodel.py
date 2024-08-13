@@ -21,6 +21,7 @@ class Notes(db.Model):
     __tablename__ = 'notes'
     noteID = db.Column(db.String(256), primary_key=True)
     userID = db.Column(db.String(256), ForeignKey('users.userID'), nullable=False)
+    podID = db.Column(db.String(256), ForeignKey('podcasts.podID'), nullable=False)
     dateCreated = db.Column(db.String(256), nullable=False)
     content = db.Column(db.String(65535), nullable=False)
 
