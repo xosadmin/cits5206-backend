@@ -146,7 +146,38 @@ def dogetnote():
 
 @app.route("/search", methods=["GET"])
 def dosearch():
-    pass
+    tokenContent = request.form.get('tokenID', None)
+    userID = mapTokenUser(tokenContent)
+    searchQuery = request.form.get('query', None)
+    if userID and searchQuery:
+        try:
+            podcasts = Podcasts.query.filter(Podcasts.podName.like(f"%{searchQuery}%")).all()
+            snippets = Snippets.query.filter(Snippets.snippetContent.like(f"%{searchQuery}%")).all()
+            result = {
+                "Podcasts": [],
+                "Snippets": []
+            }
+            for podcast in podcasts:
+                result["Podcasts"].append({
+                    "PodcastID": podcast.podID,
+                    "PodcastName": podcast.podName,
+                    "PodcastURL": podcast.podUrl
+
+                })
+
+            for snippet in snippets:
+                result["Snippets"].append({
+                    "SnippetID": snippet.snipID,
+                    "PodcastID": snippet.podID,
+                    "Content": snippet.snippetContent
+
+                })
+            
+            return jsonify({"Status": True, "Results": result})
+        except Exception as e:
+            return jsonify({"Status": False, "Detailed Info": "Search failed. Internal Error occurred."})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
 @app.route("/listsubscription", methods=["POST"])
 def listSub():
