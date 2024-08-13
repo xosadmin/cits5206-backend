@@ -17,6 +17,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = uuidGen()
 db = SQLAlchemy(app)
 
+def checkIfUserExists(username):
+    query = Users.query.filter(Users.username == username).first()
+    if query:
+        return True
+    else:
+        return False
+
 @app.route("/")
 def index():
     return jsonify({"Status": "Error", "Detailed Info": "No specified command."})
@@ -35,6 +42,19 @@ def doLogin():
         return jsonify({"Status": True, "Token": token})
     else:
         return jsonify({"Status": "Error", "Detailed Info": "Wrong username or password"})
+
+@app.route("/register", methods=["POST"])
+def doRegister():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    userID = uuidGen()
+    newUser = Users(userID=userID,username=username,password=password,role="user")
+    if not checkIfUserExists(username):
+        db.session.add(newUser)
+        db.session.commit()
+        return jsonify({"Status": True, "userID": userID})
+    else:
+        return jsonify({"Status": "Error", "Detailed Info": "User already exists!"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
