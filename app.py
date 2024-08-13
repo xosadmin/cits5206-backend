@@ -2,11 +2,7 @@ from flask import *
 from sqlalchemy import *
 from flask_sqlalchemy import *
 from models.sqlmodel import *
-from datetime import datetime
-import uuid
-
-def uuidGen():
-    return str(uuid.uuid4())
+from actions.extraact import *
 
 sqlInfo = ["127.0.0.1","3306","","",""] # [host,port,username,password,dbname]
 
@@ -23,70 +19,181 @@ def checkIfUserExists(username):
         return True
     else:
         return False
+    
+def mapTokenUser(token):
+    if token:
+        query = Tokens.query.filter(Tokens.token == token).first()
+        if query:
+            return query.userID
+        else:
+            return Null
+    else:
+        return Null
 
 @app.route("/")
 def index():
-    return jsonify({"Status": "Error", "Detailed Info": "No specified command."})
+    return jsonify({"Status": False, "Detailed Info": "No specified command."})
 
 @app.route("/login", methods=["POST"])
 def doLogin():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    query = Users.query.filter(and_(Users.username == username, Users.password == password)).first()
-    if query:
-        timenow = datetime.now()
-        token = uuidGen()
-        newToken = Tokens(userID=query.userID, token=token, dateIssue=timenow)
-        db.session.add(newToken)
-        db.session.commit()
-        return jsonify({"Status": True, "Token": token})
+    username = request.form.get('username',Null)
+    password = request.form.get('password',Null)
+    if username and password:
+        md5password = md5Calc(password)
+        query = Users.query.filter(and_(Users.username == username, Users.password == md5password)).first()
+        if query:
+            timenow = getTime()
+            token = uuidGen()
+            newToken = Tokens(userID=query.userID, token=token, dateIssue=timenow)
+            db.session.add(newToken)
+            db.session.commit()
+            return jsonify({"Status": True, "Token": token})
+        else:
+            return jsonify({"Status": False, "Detailed Info": "Wrong username or password"})
     else:
-        return jsonify({"Status": "Error", "Detailed Info": "Wrong username or password"})
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
 @app.route("/register", methods=["POST"])
 def doRegister():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    userID = uuidGen()
-    newUser = Users(userID=userID,username=username,password=password,role="user")
-    if not checkIfUserExists(username):
-        db.session.add(newUser)
-        db.session.commit()
-        return jsonify({"Status": True, "userID": userID})
+    username = request.form.get('username',Null)
+    password = request.form.get('password',Null)
+    if username and password:
+        md5password = md5Calc(password)
+        userID = uuidGen()
+        newUser = Users(userID=userID,username=username,password=md5password,role="user")
+        if not checkIfUserExists(username):
+            db.session.add(newUser)
+            db.session.commit()
+            return jsonify({"Status": True, "userID": userID})
+        else:
+            return jsonify({"Status": False, "Detailed Info": "User already exists"})
     else:
-        return jsonify({"Status": "Error", "Detailed Info": "User already exists!"})
-
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    
+@app.route("/changepass", methods=["POST"])
+def changePswd():
+    tokenContent = request.form.get('tokenID', Null)
+    userID = mapTokenUser(tokenContent)
+    password = request.form.get('password', Null)
+    if userID and password:
+        try:
+            md5password = md5Calc(password)
+            db.session.execute(Update(Users).filter(Users.userID == userID).values(password = md5password))
+            db.session.commit()
+            return jsonify({"Status": True, "userID": userID}) 
+        except Exception as e:
+            print(e)
+            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occured"})
 
 @app.route("/addnote", methods=["POST"])
 def doaddnote():
-    token = request.form.get('tokenID', 'NA')
-    content = request.form.get('content', 'NA')
+    tokenContent = request.form.get('tokenID', Null)
+    content = request.form.get('content', Null)
     noteid = uuidGen()
-    datecreated = 0
-    newNote = Notes(noteID = noteid, userID = token, dateCreated = datecreated, content = content)
-    db.session.add(newNote)
-    db.session.commit()
-    return jsonify({"Status": True, "noteID": noteid})
-
-    
-
-    
-
-
-
+    datecreated = getTime()
+    userID = mapTokenUser(tokenContent)
+    if userID and tokenContent and content:
+        try:
+            newNote = Notes(noteID = noteid, userID=userID, dateCreated = datecreated, content = content)
+            db.session.add(newNote)
+            db.session.commit()
+            return jsonify({"Status": True, "noteID": noteid})
+        except Exception as e:
+            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occured"})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
 @app.route("/getnote", methods=["GET"])
 def dogetnote():
-    token = request.form.get('tokenID','NA')
-
-
+    token = request.form.get('tokenID', Null)
 
 @app.route("/search", methods=["GET"])
 def dosearch():
-    
+    pass
 
+@app.route("/listsubscription", methods=["POST"])
+def listSub():
+    tokenContent = request.form.get('tokenID', Null)
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        query = Subscriptions.query.filter(Subscriptions.userID == userID).all()
+        if query:
+            result = []
+            for item in query:
+                resultItem = {
+                    "SubscriptionID": item.subID,
+                    "LibraryID": item.libID,
+                    "Date_Of_Subscript": item.dateOfSub
+                }
+                result.append(resultItem)
+            return jsonify(result)
+        else:
+            return jsonify({"Result": 0})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+    
+@app.route("/listsnippets", methods=["POST"])
+def listSub():
+    tokenContent = request.form.get('tokenID', Null)
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        query = Snippets.query.filter(Snippets.userID == userID).all()
+        if query:
+            result = []
+            for item in query:
+                resultItem = {
+                    "SnippetID": item.snipID,
+                    "PodcastID": item.podID,
+                    "Content": item.snippetContent
+                }
+                result.append(resultItem)
+            return jsonify(result)
+        else:
+            return jsonify({"Result": 0})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+    
+@app.route("/listpodcasts", methods=["POST"])
+def listSub():
+    tokenContent = request.form.get('tokenID', Null)
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        query = Podcasts.query.all()
+        if query:
+            result = []
+            for item in query:
+                resultItem = {
+                    "PodcastID": item.podID,
+                    "UserID": item.userID,
+                    "PodcastName": item.podName,
+                    "PodcastURL": item.podUrl
+                }
+                result.append(resultItem)
+            return jsonify(result)
+        else:
+            return jsonify({"Result": 0})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+
+@app.route("/listlibrary", methods=["POST"])
+def listSub():
+    tokenContent = request.form.get('tokenID', Null)
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        query = Library.query.filter(Library.userID == userID).all()
+        if query:
+            result = []
+            for item in query:
+                resultItem = {
+                    "LibraryID": item.libraryID,
+                    "LibraryName": item.libraryName
+                }
+                result.append(resultItem)
+            return jsonify(result)
+        else:
+            return jsonify({"Result": 0})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-
