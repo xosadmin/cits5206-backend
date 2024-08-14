@@ -21,6 +21,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = ('mysql+pymysql://' + readConf("database
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = uuidGen()
 db.init_app(app)
+tz = readConf("systemConfig","timezone")
 
 def checkIfUserExists(username):
     query = Users.query.filter(Users.username == username).first()
@@ -55,7 +56,8 @@ def doLogin():
         md5password = md5Calc(password)
         query = Users.query.filter(and_(Users.username == username, Users.password == md5password)).first()
         if query:
-            timenow = getTime()
+            global tz
+            timenow = getTime(tz)
             token = uuidGen()
             newToken = Tokens(tokenID=token, userID=query.userID, token=token, dateIssue=timenow)
             db.session.add(newToken)
@@ -100,11 +102,12 @@ def changePswd():
 
 @app.route("/addsnippet", methods=["POST"])
 def addSnippet():
+    global tz
     tokenContent = request.form.get('tokenID', None)
     content = request.form.get('content', None)
     podid = request.form.get('podid', None)
     snipID = uuidGen()
-    datecreated = getTime()
+    datecreated = getTime(tz)
     userID = mapTokenUser(tokenContent)
     if userID and content and podid:
         try:
@@ -120,11 +123,12 @@ def addSnippet():
 
 @app.route("/addnote", methods=["POST"])
 def doaddnote():
+    global tz
     tokenContent = request.form.get('tokenID', None)
     content = request.form.get('content', None)
     podid = request.form.get('podid', None)
     noteid = uuidGen()
-    datecreated = getTime()
+    datecreated = getTime(tz)
     userID = mapTokenUser(tokenContent)
     if userID and tokenContent and content:
         try:

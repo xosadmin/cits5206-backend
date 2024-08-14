@@ -1,5 +1,4 @@
 from datetime import datetime,timedelta
-from app import readConf
 import uuid
 import hashlib
 import pytz
