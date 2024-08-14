@@ -52,7 +52,7 @@ def doLogin():
         if query:
             timenow = getTime()
             token = uuidGen()
-            newToken = Tokens(userID=query.userID, token=token, dateIssue=timenow)
+            newToken = Tokens(tokenID=token, userID=query.userID, token=token, dateIssue=timenow)
             db.session.add(newToken)
             db.session.commit()
             return jsonify({"Status": True, "Token": token})
