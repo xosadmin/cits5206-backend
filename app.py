@@ -34,7 +34,8 @@ def mapTokenUser(token):
     if token:
         query = Tokens.query.filter(Tokens.token == token).first()
         if query:
-            ifExpire = CheckIfExpire(query.dateIssue, int(readConf("systemConfig","tokenExpireDays")))
+            global tz
+            ifExpire = CheckIfExpire(query.dateIssue, int(readConf("systemConfig","tokenExpireDays")), tz)
             if not ifExpire:
                 return query.userID
             else:
