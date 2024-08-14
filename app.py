@@ -1,10 +1,8 @@
 import os
 from flask import *
 from sqlalchemy import *
-from flask_sqlalchemy import *
 from models.sqlmodel import *
 from actions.extraact import *
-from datetime import timedelta
 import configparser
 
 def readConf(section,key):
@@ -294,4 +292,3 @@ def responsePing():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
