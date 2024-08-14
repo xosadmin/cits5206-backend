@@ -2,7 +2,7 @@ import os
 from flask import *
 from sqlalchemy import *
 from flask_sqlalchemy import *
-from models.sqlmodel import Users, Tokens, Notes, Library, Subscriptions, Podcasts, Snippets
+from models.sqlmodel import *
 from actions.extraact import *
 import configparser
 
@@ -19,7 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = ('mysql+pymysql://' + readConf("database
                                           + readConf("database","host") + ':' + readConf("database","port") + '/' + readConf("database","dbname"))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = uuidGen()
-db = SQLAlchemy(app)
+db.init_app(app)
 
 def checkIfUserExists(username):
     query = Users.query.filter(Users.username == username).first()
