@@ -85,6 +85,26 @@ def changePswd():
             print(e)
             return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occured"})
 
+@app.route("/addsnippet", methods=["POST"])
+def addSnippet():
+    tokenContent = request.form.get('tokenID', Null)
+    content = request.form.get('content', Null)
+    podid = request.form.get('podid', Null)
+    snipID = uuidGen()
+    datecreated = getTime()
+    userID = mapTokenUser(tokenContent)
+    if userID and content and podid:
+        try:
+            newSnippet = Snippets(snipID=snipID,userID=userID,podID=podid,snippetContent=content,dateCreated=datecreated)
+            db.session.add(newSnippet)
+            db.session.commit()
+            return jsonify({"Status": True, "SnippetID": snipID})
+        except Exception as e:
+            print(e)
+            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occured"})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+
 @app.route("/addnote", methods=["POST"])
 def doaddnote():
     tokenContent = request.form.get('tokenID', Null)
@@ -100,6 +120,7 @@ def doaddnote():
             db.session.commit()
             return jsonify({"Status": True, "noteID": noteid})
         except Exception as e:
+            print(e)
             return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occured"})
     else:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
@@ -161,6 +182,7 @@ def dosearch():
                 })
             return jsonify(result)
         except Exception as e:
+            print(e)
             return jsonify({"Status": False, "Detailed Info": "Search failed. Internal Error occurred."})
     else:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
@@ -198,7 +220,8 @@ def listSub():
                 resultItem = {
                     "SnippetID": item.snipID,
                     "PodcastID": item.podID,
-                    "Content": item.snippetContent
+                    "Content": item.snippetContent,
+                    "dateCreated": item.dateCreated
                 }
                 result.append(resultItem)
             return jsonify(result)

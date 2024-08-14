@@ -62,6 +62,7 @@ CREATE TABLE `snippets` (
     `userID` VARCHAR(256) NOT NULL,
     `podID` VARCHAR(256) NOT NULL,
     `snippetContent` TEXT NOT NULL,
+    `dateCreated` VARCHAR(256) NOT NULL,
     FOREIGN KEY (`userID`) REFERENCES `users`(`userID`),
     FOREIGN KEY (`podID`) REFERENCES `podcasts`(`podID`)
 );
