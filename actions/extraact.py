@@ -6,7 +6,7 @@ def uuidGen():
     return str(uuid.uuid4())
 
 def getTime():
-    timenow = datetime.now()
+    timenow = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
     return timenow
 
 def md5Calc(plainText):
