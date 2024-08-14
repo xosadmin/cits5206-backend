@@ -2,7 +2,7 @@ import os
 from flask import *
 from sqlalchemy import *
 from flask_sqlalchemy import *
-from models.sqlmodel import *
+from models.sqlmodel import Users, Tokens, Notes, Library, Subscriptions, Podcasts, Snippets
 from actions.extraact import *
 import configparser
 

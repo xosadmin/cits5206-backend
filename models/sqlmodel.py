@@ -1,54 +1,51 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from app import db
 
-Base = declarative_base()
-
-class Users(Base):
+class Users(db.Model):
     __tablename__ = 'users'
-    userID = Column(String(256), primary_key=True)
-    username = Column(String(80), unique=True, nullable=False)
-    password = Column(String(120), nullable=False)
-    role = Column(String(50), nullable=False)
+    userID = db.Column(db.String(256), primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
 
-class Tokens(Base):
+class Tokens(db.Model):
     __tablename__ = 'tokens'
-    tokenID = Column(String(256), primary_key=True)
-    userID = Column(String(256), ForeignKey('users.userID'), nullable=False)
-    token = Column(String(256), unique=True, nullable=False)
-    dateIssue = Column(String(256), nullable=False)
+    tokenID = db.Column(db.String(256), primary_key=True)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    token = db.Column(db.String(256), unique=True, nullable=False)
+    dateIssue = db.Column(db.String(256), nullable=False)
 
-class Notes(Base):
+class Notes(db.Model):
     __tablename__ = 'notes'
-    noteID = Column(String(256), primary_key=True)
-    userID = Column(String(256), ForeignKey('users.userID'), nullable=False)
-    podID = Column(String(256), ForeignKey('podcasts.podID'), nullable=False)
-    dateCreated = Column(String(256), nullable=False)
-    content = Column(String(65535), nullable=False)
+    noteID = db.Column(db.String(256), primary_key=True)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    podID = db.Column(db.String(256), db.ForeignKey('podcasts.podID'), nullable=False)
+    dateCreated = db.Column(db.String(256), nullable=False)
+    content = db.Column(db.String(65535), nullable=False)
 
-class Library(Base):
+class Library(db.Model):
     __tablename__ = 'library'
-    libraryID = Column(String(256), primary_key=True)
-    userID = Column(String(256), ForeignKey('users.userID'), nullable=False, default="0")
-    libraryName = Column(String(256), nullable=False)
+    libraryID = db.Column(db.String(256), primary_key=True)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False, default="0")
+    libraryName = db.Column(db.String(256), nullable=False)
 
-class Subscriptions(Base):
+class Subscriptions(db.Model):
     __tablename__ = "subscriptions"
-    subID = Column(String(256), primary_key=True)
-    userID = Column(String(256), ForeignKey('users.userID'), nullable=False)
-    libID = Column(String(256), ForeignKey('library.libraryID'), nullable=False)
-    dateOfSub = Column(String(256), nullable=False)
+    subID = db.Column(db.String(256), primary_key=True)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    libID = db.Column(db.String(256), db.ForeignKey('library.libraryID'), nullable=False)
+    dateOfSub = db.Column(db.String(256), nullable=False)
 
-class Podcasts(Base):
+class Podcasts(db.Model):
     __tablename__ = "podcasts"
-    podID = Column(String(256), primary_key=True)
-    userID = Column(String(256), ForeignKey('users.userID'), nullable=False)
-    podName = Column(String(256), nullable=False)
-    podUrl = Column(String(512), nullable=False)
+    podID = db.Column(db.String(256), primary_key=True)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    podName = db.Column(db.String(256), nullable=False)
+    podUrl = db.Column(db.String(512), nullable=False)
 
-class Snippets(Base):
+class Snippets(db.Model):
     __tablename__ = "snippets"
-    snipID = Column(String(256), primary_key=True)
-    userID = Column(String(256), ForeignKey('users.userID'), nullable=False)
-    podID = Column(String(256), ForeignKey('podcasts.podID'), nullable=False)
-    snippetContent = Column(String(65535), nullable=False)
-    dateCreated = Column(String(256), nullable=False)
+    snipID = db.Column(db.String(256), primary_key=True)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    podID = db.Column(db.String(256), db.ForeignKey('podcasts.podID'), nullable=False)
+    snippetContent = db.Column(db.String(65535), nullable=False)
+    dateCreated = db.Column(db.String(256), nullable=False)
