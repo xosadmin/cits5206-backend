@@ -1,14 +1,22 @@
+import os
 from flask import *
 from sqlalchemy import *
 from flask_sqlalchemy import *
 from models.sqlmodel import *
 from actions.extraact import *
+import configparser
 
-sqlInfo = ["127.0.0.1","3306","","",""] # [host,port,username,password,dbname]
+def readConf(section,key):
+    if os.path.exists("config.ini"):
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+        return str(config[section][key])
+    else:
+        return None
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = ('mysql+pymysql://' + sqlInfo[2] + ':' + sqlInfo[3] + '@'
-                                          + sqlInfo[0] + ':' + sqlInfo[1] + '/' + sqlInfo[4])
+app.config['SQLALCHEMY_DATABASE_URI'] = ('mysql+pymysql://' + readConf("database","username") + ':' + readConf("database","password") + '@'
+                                          + readConf("database","host") + ':' + readConf("database","port") + '/' + readConf("database","dbname"))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = uuidGen()
 db = SQLAlchemy(app)
@@ -26,9 +34,9 @@ def mapTokenUser(token):
         if query:
             return query.userID
         else:
-            return Null
+            return None
     else:
-        return Null
+        return None
 
 @app.route("/")
 def index():
@@ -36,8 +44,8 @@ def index():
 
 @app.route("/login", methods=["POST"])
 def doLogin():
-    username = request.form.get('username',Null)
-    password = request.form.get('password',Null)
+    username = request.form.get('username',None)
+    password = request.form.get('password',None)
     if username and password:
         md5password = md5Calc(password)
         query = Users.query.filter(and_(Users.username == username, Users.password == md5password)).first()
@@ -55,8 +63,8 @@ def doLogin():
 
 @app.route("/register", methods=["POST"])
 def doRegister():
-    username = request.form.get('username',Null)
-    password = request.form.get('password',Null)
+    username = request.form.get('username',None)
+    password = request.form.get('password',None)
     if username and password:
         md5password = md5Calc(password)
         userID = uuidGen()
@@ -72,9 +80,9 @@ def doRegister():
     
 @app.route("/changepass", methods=["POST"])
 def changePswd():
-    tokenContent = request.form.get('tokenID', Null)
+    tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
-    password = request.form.get('password', Null)
+    password = request.form.get('password', None)
     if userID and password:
         try:
             md5password = md5Calc(password)
@@ -87,9 +95,9 @@ def changePswd():
 
 @app.route("/addsnippet", methods=["POST"])
 def addSnippet():
-    tokenContent = request.form.get('tokenID', Null)
-    content = request.form.get('content', Null)
-    podid = request.form.get('podid', Null)
+    tokenContent = request.form.get('tokenID', None)
+    content = request.form.get('content', None)
+    podid = request.form.get('podid', None)
     snipID = uuidGen()
     datecreated = getTime()
     userID = mapTokenUser(tokenContent)
@@ -107,9 +115,9 @@ def addSnippet():
 
 @app.route("/addnote", methods=["POST"])
 def doaddnote():
-    tokenContent = request.form.get('tokenID', Null)
-    content = request.form.get('content', Null)
-    podid = request.form.get('podid', Null)
+    tokenContent = request.form.get('tokenID', None)
+    content = request.form.get('content', None)
+    podid = request.form.get('podid', None)
     noteid = uuidGen()
     datecreated = getTime()
     userID = mapTokenUser(tokenContent)
@@ -270,6 +278,9 @@ def list_libraries():
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
+@app.route("/ping")
+def responsePing():
+    return jsonify({"Status": True, "Detailed Info": "PONG"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
