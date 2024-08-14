@@ -7,7 +7,7 @@ CREATE TABLE `users` (
 );
 
 -- Create a default admin user
-INSERT INTO users VALUES ("0","admin","admin","admin");
+INSERT INTO users VALUES ("0","admin",MD5("admin"),"admin");
 
 -- Create `tokens` table
 CREATE TABLE `tokens` (

@@ -4,6 +4,7 @@ from sqlalchemy import *
 from flask_sqlalchemy import *
 from models.sqlmodel import *
 from actions.extraact import *
+from datetime import timedelta
 import configparser
 
 def readConf(section,key):
@@ -32,7 +33,11 @@ def mapTokenUser(token):
     if token:
         query = Tokens.query.filter(Tokens.token == token).first()
         if query:
-            return query.userID
+            ifExpire = CheckIfExpire(query.dateIssue, int(readConf("systemConfig","tokenExpireDays")))
+            if not ifExpire:
+                return query.userID
+            else:
+                return None
         else:
             return None
     else:
