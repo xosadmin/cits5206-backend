@@ -126,18 +126,17 @@ def doaddnote():
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
 @app.route("/listnotes", methods=["GET"])
-def dogetnote():
-    tokenContent = request.form.get('tokenID', Null)
+def get_notes():
+    tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
     if userID:
         query = Notes.query.filter(Notes.userID == userID).first()
         if query:
             result = {
-                    "NoteID": query.noteID,
-                    "PodcastID": query.podID,
-                    "DateCreated": query.dateCreated
-                }
-            
+                "NoteID": query.noteID,
+                "PodcastID": query.podID,
+                "DateCreated": query.dateCreated
+            }
             return jsonify(result)
         else:
             return jsonify({"Result": 0})
@@ -145,20 +144,19 @@ def dogetnote():
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
 @app.route("/getnotedetails", methods=["GET"])
-def dogetnote():
-    tokenContent = request.form.get('tokenID', Null)
+def get_note_details():
+    tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
-    noteID = request.form.get('noteID', Null)
+    noteID = request.form.get('noteID', None)
     if userID and noteID:
         query = Notes.query.filter(Notes.noteID == noteID, Notes.userID == userID).first()
         if query:
             result = {
-                    "NoteID": query.noteID,
-                    "PodcastID": query.podID,
-                    "Content": query.content,
-                    "DateCreated": query.dateCreated
-                }
-            
+                "NoteID": query.noteID,
+                "PodcastID": query.podID,
+                "Content": query.content,
+                "DateCreated": query.dateCreated
+            }
             return jsonify(result)
         else:
             return jsonify({"Result": 0})
@@ -188,64 +186,64 @@ def dosearch():
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
 @app.route("/listsubscription", methods=["POST"])
-def listSub():
-    tokenContent = request.form.get('tokenID', Null)
+def list_subscriptions():
+    tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
     if userID:
         query = Subscriptions.query.filter(Subscriptions.userID == userID).all()
         if query:
-            result = []
-            for item in query:
-                resultItem = {
+            result = [
+                {
                     "SubscriptionID": item.subID,
                     "LibraryID": item.libID,
                     "Date_Of_Subscript": item.dateOfSub
                 }
-                result.append(resultItem)
+                for item in query
+            ]
             return jsonify(result)
         else:
             return jsonify({"Result": 0})
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
-    
+
 @app.route("/listsnippets", methods=["POST"])
-def listSub():
-    tokenContent = request.form.get('tokenID', Null)
+def list_snippets():
+    tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
     if userID:
         query = Snippets.query.filter(Snippets.userID == userID).all()
         if query:
-            result = []
-            for item in query:
-                resultItem = {
+            result = [
+                {
                     "SnippetID": item.snipID,
                     "PodcastID": item.podID,
                     "Content": item.snippetContent,
                     "dateCreated": item.dateCreated
                 }
-                result.append(resultItem)
+                for item in query
+            ]
             return jsonify(result)
         else:
             return jsonify({"Result": 0})
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
-    
+
 @app.route("/listpodcasts", methods=["POST"])
-def listSub():
-    tokenContent = request.form.get('tokenID', Null)
+def list_podcasts():
+    tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
     if userID:
         query = Podcasts.query.all()
         if query:
-            result = []
-            for item in query:
-                resultItem = {
+            result = [
+                {
                     "PodcastID": item.podID,
                     "UserID": item.userID,
                     "PodcastName": item.podName,
                     "PodcastURL": item.podUrl
                 }
-                result.append(resultItem)
+                for item in query
+            ]
             return jsonify(result)
         else:
             return jsonify({"Result": 0})
@@ -253,24 +251,26 @@ def listSub():
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
 @app.route("/listlibrary", methods=["POST"])
-def listSub():
-    tokenContent = request.form.get('tokenID', Null)
+def list_libraries():
+    tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
     if userID:
         query = Library.query.filter(Library.userID == userID).all()
         if query:
-            result = []
-            for item in query:
-                resultItem = {
+            result = [
+                {
                     "LibraryID": item.libraryID,
                     "LibraryName": item.libraryName
                 }
-                result.append(resultItem)
+                for item in query
+            ]
             return jsonify(result)
         else:
             return jsonify({"Result": 0})
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
