@@ -1,5 +1,4 @@
 from datetime import datetime,timedelta
-from app import readConf
 import uuid
 import hashlib
 import pytz
@@ -7,14 +6,13 @@ import pytz
 def uuidGen():
     return str(uuid.uuid4())
 
-def getTime():
-    tz = pytz.timezone(readConf("systemConfig","timezone"))
+def getTime(tz):
+    tz = pytz.timezone(tz)
     timenow = datetime.now(tz).strftime("%d/%m/%Y-%H:%M:%S")
     return timenow
 
-def CheckIfExpire(dateIssue, expDays):
+def CheckIfExpire(dateIssue, expDays, tz_utc):
     date_format = "%d/%m/%Y-%H:%M:%S"
-    tz_utc = readConf("systemConfig","timezone")
     tz = pytz.timezone(tz_utc)
     dateIssue_dt = datetime.strptime(dateIssue, date_format)
     dateIssue_dt = tz.localize(dateIssue_dt)

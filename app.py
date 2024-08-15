@@ -1,10 +1,8 @@
 import os
 from flask import *
 from sqlalchemy import *
-from flask_sqlalchemy import *
 from models.sqlmodel import *
 from actions.extraact import *
-from datetime import timedelta
 import configparser
 
 def readConf(section,key):
@@ -21,6 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = ('mysql+pymysql://' + readConf("database
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = uuidGen()
 db.init_app(app)
+tz = readConf("systemConfig","timezone")
 
 def checkIfUserExists(username):
     query = Users.query.filter(Users.username == username).first()
@@ -33,7 +32,8 @@ def mapTokenUser(token):
     if token:
         query = Tokens.query.filter(Tokens.token == token).first()
         if query:
-            ifExpire = CheckIfExpire(query.dateIssue, int(readConf("systemConfig","tokenExpireDays")))
+            global tz
+            ifExpire = CheckIfExpire(query.dateIssue, int(readConf("systemConfig","tokenExpireDays")), tz)
             if not ifExpire:
                 return query.userID
             else:
@@ -55,7 +55,8 @@ def doLogin():
         md5password = md5Calc(password)
         query = Users.query.filter(and_(Users.username == username, Users.password == md5password)).first()
         if query:
-            timenow = getTime()
+            global tz
+            timenow = getTime(tz)
             token = uuidGen()
             newToken = Tokens(tokenID=token, userID=query.userID, token=token, dateIssue=timenow)
             db.session.add(newToken)
@@ -100,11 +101,12 @@ def changePswd():
 
 @app.route("/addsnippet", methods=["POST"])
 def addSnippet():
+    global tz
     tokenContent = request.form.get('tokenID', None)
     content = request.form.get('content', None)
     podid = request.form.get('podid', None)
     snipID = uuidGen()
-    datecreated = getTime()
+    datecreated = getTime(tz)
     userID = mapTokenUser(tokenContent)
     if userID and content and podid:
         try:
@@ -120,11 +122,12 @@ def addSnippet():
 
 @app.route("/addnote", methods=["POST"])
 def doaddnote():
+    global tz
     tokenContent = request.form.get('tokenID', None)
     content = request.form.get('content', None)
     podid = request.form.get('podid', None)
     noteid = uuidGen()
-    datecreated = getTime()
+    datecreated = getTime(tz)
     userID = mapTokenUser(tokenContent)
     if userID and tokenContent and content:
         try:
@@ -289,4 +292,3 @@ def responsePing():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
