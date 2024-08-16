@@ -41,8 +41,11 @@ class Podcasts(db.Model):
     __tablename__ = "podcasts"
     podID = db.Column(db.String(256), primary_key=True)
     userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    categoryID = db.Column(db.String(256), db.ForeignKey('podCategory.categoryID'), primary_key=True)
     podName = db.Column(db.String(256), nullable=False)
     podUrl = db.Column(db.String(512), nullable=False)
+    podDuration = db.Column(db.Integer, nullable=False, default=0)
+    updateDate = db.Column(db.String(256), nullable=False)
 
 class Snippets(db.Model):
     __tablename__ = "snippets"
@@ -51,3 +54,8 @@ class Snippets(db.Model):
     podID = db.Column(db.String(256), db.ForeignKey('podcasts.podID'), nullable=False)
     snippetContent = db.Column(db.String(65535), nullable=False)
     dateCreated = db.Column(db.String(256), nullable=False)
+
+class podCategory(db.Model):
+    __tablename__ = "podCategory"
+    categoryID = db.Column(db.String(256), primary_key=True)
+    categoryName = db.Column(db.String(256), primary_key=True)
