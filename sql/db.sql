@@ -6,6 +6,9 @@ CREATE TABLE `users` (
     `role` VARCHAR(50) NOT NULL
 );
 
+-- Add a test admin user with password admin
+INSERT INTO `users` VALUES ("0","admin",MD5("admin"),"admin");
+
 -- Create `tokens` table
 CREATE TABLE `tokens` (
     `tokenID` VARCHAR(256) PRIMARY KEY,
