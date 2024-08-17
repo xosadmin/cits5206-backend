@@ -77,6 +77,12 @@ CREATE TABLE `snippets` (
     CONSTRAINT `snippetFK2` FOREIGN KEY (`podID`) REFERENCES `podcasts`(`podID`)
 );
 
+-- Create `podCategory` table
+CREATE TABLE `podCategory` (
+    `categoryID` VARCHAR(256) PRIMARY KEY,
+    `categoryName` VARCHAR(256)
+);
+
 
 CREATE INDEX idx_users_username ON users (username);
 CREATE INDEX idx_tokens_token ON tokens (token);

@@ -4,7 +4,6 @@ from models.sqlmodel import Users, Tokens, Notes, Snippets, Podcasts, Subscripti
 from actions.extraact import md5Calc, uuidGen, getTime
 
 class BasicTests(unittest.TestCase):
-
     def setUp(self):
         self.app = create_app('testing')
         self.client = self.app.test_client()
@@ -43,7 +42,6 @@ class BasicTests(unittest.TestCase):
         )
         db.session.add(self.test_podcast)
         db.session.commit()
-
 
 
     def tearDown(self):
