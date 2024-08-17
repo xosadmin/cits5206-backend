@@ -1,8 +1,8 @@
 import os
-from flask import Flask
+from flask import *
 from models.sqlmodel import db
 from actions.extraact import uuidGen
-from routes import register_routes
+from routes import mainBluePrint
 import logging
 import configparser
 
@@ -33,6 +33,7 @@ def create_app(config_name='default'):
         elif config_name == "testing":
             db_uri = f"mysql+pymysql://{readConf('database', 'username')}:{readConf('database', 'password')}@" \
                      f"{readConf('database', 'host')}:{readConf('database', 'port')}/testDB"
+            app.config['TESTING'] = True
         else:
             print("Unknown action.")
             return -1
@@ -45,7 +46,7 @@ def create_app(config_name='default'):
         raise
 
     db.init_app(app)
-    register_routes(app)
+    app.register_blueprint(mainBluePrint)
 
     if config_name == "testing":
         with app.app_context():
