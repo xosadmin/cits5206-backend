@@ -210,6 +210,48 @@ def add_subscription():
     else:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
+@mainBluePrint.route("/listlibrary", methods=["POST"])
+def add_subscription():
+    tokenContent = request.form.get('tokenID')
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        try:
+            query = Library.query.filter(Library.userID == userID).all()
+            result = [
+                {
+                    "LibraryID": item.libraryID,
+                    "libraryName": item.libraryName
+                }
+                for item in query
+            ]
+            return jsonify(result)
+        except Exception as e:
+            print(e)
+            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+
+@mainBluePrint.route("/listcategory", methods=["POST"])
+def add_subscription():
+    tokenContent = request.form.get('tokenID')
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        try:
+            query = PodCategory.query.all()
+            result = [
+                {
+                    "CategoryID": item.categoryID,
+                    "categoryName": item.categoryName
+                }
+                for item in query
+            ]
+            return jsonify(result)
+        except Exception as e:
+            print(e)
+            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+
 @mainBluePrint.route("/addpodcast", methods=["POST"])
 def add_podcast():
     tokenContent = request.form.get('tokenID')
