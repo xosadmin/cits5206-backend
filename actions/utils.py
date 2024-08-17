@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def readConf(section, key):
-    config_path = "config.ini"
+    config_path = "../config.ini"
     if not os.path.exists(config_path):
         logger.error(f"Config file {config_path} does not exist")
         raise FileNotFoundError(f"Config file {config_path} does not exist")

@@ -113,7 +113,6 @@ def register_routes(app):
         else:
             return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
 
-    # Add remaining routes here...
     @app.route("/listnotes", methods=["POST"])
     def get_notes():
         tokenContent = request.form.get('tokenID')

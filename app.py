@@ -1,6 +1,6 @@
 from flask import Flask
 from models.sqlmodel import db
-from utils import readConf
+from actions.utils import readConf
 from routes import register_routes
 import logging
 
@@ -8,7 +8,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from sqlalchemy import inspect
 
 def create_app(config_name='default'):
     app = Flask(__name__)
