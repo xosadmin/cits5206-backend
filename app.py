@@ -159,7 +159,7 @@ def get_notes():
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
-@app.route("/getnotedetails", methods=["GET"])
+@app.route("/notedetails", methods=["POST"])
 def get_note_details():
     tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
@@ -179,7 +179,7 @@ def get_note_details():
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
-@app.route("/search", methods=["GET"])
+@app.route("/search", methods=["POST"])
 def dosearch():
     tokenContent = request.form.get('tokenID', None)
     userID = mapTokenUser(tokenContent)
@@ -254,9 +254,12 @@ def list_podcasts():
             result = [
                 {
                     "PodcastID": item.podID,
+                    "CategoryID": item.categoryID,
                     "UserID": item.userID,
                     "PodcastName": item.podName,
-                    "PodcastURL": item.podUrl
+                    "PodcastURL": item.podUrl,
+                    "PodcastDuration": item.podDuration,
+                    "updateDate": item.updateDate
                 }
                 for item in query
             ]
@@ -277,6 +280,26 @@ def list_libraries():
                 {
                     "LibraryID": item.libraryID,
                     "LibraryName": item.libraryName
+                }
+                for item in query
+            ]
+            return jsonify(result)
+        else:
+            return jsonify({"Result": 0})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+    
+@app.route("/listcategory", methods=["POST"])
+def listcategory():
+    tokenContent = request.form.get('tokenID', None)
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        query = podCategory.query.all()
+        if query:
+            result = [
+                {
+                    "categoryID": item.categoryID,
+                    "categoryName": item.categoryName
                 }
                 for item in query
             ]
