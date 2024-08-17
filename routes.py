@@ -1,9 +1,8 @@
 from operator import and_
 from flask import *
-from app import readConf
 from sqlalchemy import *
 from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
-from actions.extraact import md5Calc, uuidGen, getTime, CheckIfExpire
+from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire
 import logging
 
 logger = logging.getLogger(__name__)
