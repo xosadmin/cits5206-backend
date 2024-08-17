@@ -1,8 +1,8 @@
-import os,sys
+import os, sys
 import unittest
 from app import create_app, db
-from models.sqlmodel import Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
-from utils import *
+from models.sqlmodel import Users, Podcasts, PodCategory
+from utils import readConf, uuidGen, md5Calc, getTime
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -17,34 +17,39 @@ class BasicTests(unittest.TestCase):
         db.drop_all()
         db.create_all()
 
-        # Create a test user
+        # Get timezone value safely using readConf
+        timezone = readConf("systemConfig", "timezone")
+
+        # Create a test user and commit it
         self.test_user = Users(
             userID=uuidGen(),
             username='testuser',
-            password=md5Calc('testpassword'),  # Ensure this matches the password in the login test
+            password=md5Calc('testpassword'),
             role='user'
         )
         db.session.add(self.test_user)
+        db.session.commit()  # Ensure the user is committed before using the userID
 
-        # Create a test podcast category
+        # Create a test podcast category and commit it
         self.test_category = PodCategory(
             categoryID=uuidGen(),
             categoryName='Test Category'
         )
         db.session.add(self.test_category)
+        db.session.commit()  # Ensure the category is committed before using the categoryID
 
-        # Create a test podcast
+        # Create a test podcast using the committed userID and categoryID
         self.test_podcast = Podcasts(
             podID=uuidGen(),
-            userID=self.test_user.userID,
-            categoryID=self.test_category.categoryID,
+            userID=self.test_user.userID,  # Use the committed userID
+            categoryID=self.test_category.categoryID,  # Use the committed categoryID
             podName='Test Podcast',
-            title='Test Podcast Title',
             podUrl='http://example.com',
-            updateDate=getTime(self.app.config['TIMEZONE'])
+            updateDate=getTime(timezone)
         )
         db.session.add(self.test_podcast)
-        db.session.commit()
+        db.session.commit()  # Ensure the podcast is committed
+
 
 
     def tearDown(self):
@@ -52,20 +57,17 @@ class BasicTests(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    # Your test cases go here...
     def test_register_user(self):
         response = self.client.post('/register', data=dict(username='newuser', password='newpass'))
         self.assertEqual(response.status_code, 201)
         self.assertIn('userID', response.get_json())
 
     def test_login_user(self):
-        # Attempt to login with correct credentials
         response = self.client.post('/login', data=dict(username='testuser', password='testpassword'))
         self.assertEqual(response.status_code, 201)
         json_data = response.get_json()
         self.assertIn('Token', json_data)
         return json_data['Token']
-
 
     def test_add_and_get_notes(self):
         token = self.test_login_user()
@@ -76,13 +78,21 @@ class BasicTests(unittest.TestCase):
         response = self.client.post('/listnotes', data=dict(tokenID=token))
         notes = response.get_json()
 
-        # Debugging prints
-        print("Response from /listnotes:", notes)
-        print("Expected Note ID:", note_id)
-
-        self.assertIsNotNone(notes, "Notes response is None")
-        self.assertTrue(isinstance(notes, list), "Notes response is not a list")
+        self.assertIsNotNone(notes)
+        self.assertTrue(isinstance(notes, list))
         self.assertTrue(any(note['NoteID'] == note_id for note in notes))
+    
+    def test_multiple_note_creation(self):
+        token = self.test_login_user()
+        for i in range(100):  # Simulate creating 100 notes
+            response = self.client.post('/addnote', data=dict(
+                tokenID=token,
+                content=f'Test Note {i}',
+                podid=self.test_podcast.podID
+            ))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('noteID', response.get_json())
+
 
 if __name__ == '__main__':
     unittest.main()
