@@ -1,7 +1,10 @@
+import os,sys
 import unittest
 from app import create_app, db
 from models.sqlmodel import Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
-from actions.extraact import md5Calc, uuidGen, getTime
+from utils import *
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 class BasicTests(unittest.TestCase):
     def setUp(self):
