@@ -20,7 +20,7 @@ CREATE TABLE `tokens` (
 
 -- Create `podCategory` table
 CREATE TABLE `podCategory` (
-    `categoryID` VARCHAR(256) PRIMARY KEY,
+    `categoryID` VARCHAR(256) PRIMARY KEY UNIQUE,
     `categoryName` VARCHAR(256) NOT NULL
 );
 
@@ -76,3 +76,9 @@ CREATE TABLE `snippets` (
     CONSTRAINT `snippetFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`),
     CONSTRAINT `snippetFK2` FOREIGN KEY (`podID`) REFERENCES `podcasts`(`podID`)
 );
+
+
+CREATE INDEX idx_users_username ON users (username);
+CREATE INDEX idx_tokens_token ON tokens (token);
+CREATE INDEX idx_notes_userID ON notes (userID);
+CREATE INDEX idx_notes_podID ON notes (podID);

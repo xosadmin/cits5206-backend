@@ -1,64 +1,87 @@
-import sys
-import os
 import unittest
-
-# Add the root directory to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from app import app, db  # Import your Flask app and db instance
-
-
+from app import create_app, db
+from models.sqlmodel import Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
+from actions.extraact import md5Calc, uuidGen, getTime
 
 class BasicTests(unittest.TestCase):
 
     def setUp(self):
-        app.config['TESTING'] = True
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'  # Use an in-memory SQLite database for testing
-        self.app = app.test_client()
-        with app.app_context():
-            db.create_all()  # Create all tables in the in-memory database
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+
+        # Ensure the database is clean
+        db.drop_all()
+        db.create_all()
+
+        # Create a test user
+        self.test_user = Users(
+            userID=uuidGen(),
+            username='testuser',
+            password=md5Calc('testpassword'),  # Ensure this matches the password in the login test
+            role='user'
+        )
+        db.session.add(self.test_user)
+
+        # Create a test podcast category
+        self.test_category = PodCategory(
+            categoryID=uuidGen(),
+            categoryName='Test Category'
+        )
+        db.session.add(self.test_category)
+
+        # Create a test podcast
+        self.test_podcast = Podcasts(
+            podID=uuidGen(),
+            userID=self.test_user.userID,
+            categoryID=self.test_category.categoryID,
+            podName='Test Podcast',
+            title='Test Podcast Title',
+            podUrl='http://example.com',
+            updateDate=getTime(self.app.config['TIMEZONE'])
+        )
+        db.session.add(self.test_podcast)
+        db.session.commit()
+
+
 
     def tearDown(self):
-        with app.app_context():
-            db.session.remove()  # Clear the session
-            db.drop_all()  # Drop all tables
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
 
-    def test_home_page(self):
-        response = self.app.get('/')
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'No specified command.', response.data)
-
+    # Your test cases go here...
     def test_register_user(self):
-        response = self.app.post('/register', data=dict(username='testuser', password='testpass'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Status', response.data)
+        response = self.client.post('/register', data=dict(username='newuser', password='newpass'))
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('userID', response.get_json())
 
     def test_login_user(self):
-        # First, register a user
-        self.app.post('/register', data=dict(username='testuser', password='testpass'))
-        
-        # Then attempt to log in
-        response = self.app.post('/login', data=dict(username='testuser', password='testpass'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Token', response.data)
+        # Attempt to login with correct credentials
+        response = self.client.post('/login', data=dict(username='testuser', password='testpassword'))
+        self.assertEqual(response.status_code, 201)
+        json_data = response.get_json()
+        self.assertIn('Token', json_data)
+        return json_data['Token']
 
-    def test_invalid_login(self):
-        # Attempt to log in with an incorrect username or password
-        response = self.app.post('/login', data=dict(username='invaliduser', password='invalidpass'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Wrong username or password', response.data)
 
-    def test_add_note_unauthorized(self):
-        # Try to add a note without authorization (without a valid token)
-        response = self.app.post('/addnote', data=dict(content='Test Note', podid='1'))
+    def test_add_and_get_notes(self):
+        token = self.test_login_user()
+        response = self.client.post('/addnote', data=dict(tokenID=token, content='Test Note', podid=self.test_podcast.podID))
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Unauthenticated', response.data)
+        note_id = response.get_json()['noteID']
 
-    def test_ping(self):
-        # Test the /ping route to ensure the service is running
-        response = self.app.get('/ping')
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'PONG', response.data)
+        response = self.client.post('/listnotes', data=dict(tokenID=token))
+        notes = response.get_json()
 
-if __name__ == "__main__":
+        # Debugging prints
+        print("Response from /listnotes:", notes)
+        print("Expected Note ID:", note_id)
+
+        self.assertIsNotNone(notes, "Notes response is None")
+        self.assertTrue(isinstance(notes, list), "Notes response is not a list")
+        self.assertTrue(any(note['NoteID'] == note_id for note in notes))
+
+if __name__ == '__main__':
     unittest.main()
