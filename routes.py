@@ -1,7 +1,7 @@
 from operator import and_
-from turtle import update
 from flask import jsonify, request
 from app import readConf
+from sqlalchemy import *
 from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
 from actions.extraact import md5Calc, uuidGen, getTime, CheckIfExpire
 import logging
