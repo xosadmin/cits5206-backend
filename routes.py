@@ -25,7 +25,7 @@ def doLogin():
         query = Users.query.filter(and_(Users.username == username, Users.password == md5password)).first()
         if query:
             token = uuidGen()
-            newToken = Tokens(tokenID=token, userID=query.userID, token=token, dateIssue=getTime(app.config['TIMEZONE']))
+            newToken = Tokens(tokenID=token, userID=query.userID, token=token, dateIssue=getTime(readConf("systemConfig","timezone")))
             db.session.add(newToken)
             db.session.commit()
             return jsonify({"Status": True, "Token": token}), 201
@@ -78,7 +78,7 @@ def addSnippet():
     content = request.form.get('content')
     podid = request.form.get('podid')
     snipID = uuidGen()
-    datecreated = getTime(app.config['TIMEZONE'])
+    datecreated = getTime(readConf("systemConfig","timezone"))
     userID = mapTokenUser(tokenContent)
     if userID and content and podid:
         try:
@@ -98,7 +98,7 @@ def doaddnote():
     content = request.form.get('content')
     podid = request.form.get('podid')
     noteid = uuidGen()
-    datecreated = getTime(app.config['TIMEZONE'])
+    datecreated = getTime(readConf("systemConfig","timezone"))
     userID = mapTokenUser(tokenContent)
     if userID and content:
         try:
@@ -200,7 +200,7 @@ def add_subscription():
     podID = request.form.get('podID')
     if userID and podID:
         try:
-            newSubscription = Subscriptions(userID=userID, podID=podID, subscriptionDate=getTime(app.config['TIMEZONE']))
+            newSubscription = Subscriptions(userID=userID, podID=podID, subscriptionDate=getTime(readConf("systemConfig","timezone")))
             db.session.add(newSubscription)
             db.session.commit()
             return jsonify({"Status": True})
@@ -218,14 +218,12 @@ def add_podcast():
     podName = request.form.get('podName')
     podUrl = request.form.get('podUrl')
     categoryID = request.form.get('categoryID')
-    title = request.form.get('title')
-    update_date = getTime(app.config['TIMEZONE'])
+    update_date = getTime(readConf("systemConfig","timezone"))
 
-    if userID and podName and podUrl and categoryID and title:
+    if userID and podName and podUrl and categoryID:
         try:
             newPodcast = Podcasts(
                 podID=podID,
-                title=title,
                 userID=userID,
                 categoryID=categoryID,
                 podName=podName,
@@ -280,7 +278,7 @@ def mapTokenUser(token):
 
     query = Tokens.query.filter(Tokens.token == token).first()
     if query:
-        if CheckIfExpire(query.dateIssue, int(readConf("systemConfig", "tokenExpireDays")), app.config['TIMEZONE']):
+        if CheckIfExpire(query.dateIssue, int(readConf("systemConfig", "tokenExpireDays")), readConf("systemConfig","timezone")):
             logger.warning(f"Token {token} expired")
             return None
         return query.userID
