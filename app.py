@@ -23,9 +23,7 @@ def create_app(config_name='default'):
             print("Unknown action.")
             return -1
         app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config['SECRET_KEY'] = uuidGen()
-        app.config['TIMEZONE'] = readConf("systemConfig", "timezone")
     except Exception as e:
         logger.error(f"Failed to create app: {e}")
         raise
