@@ -1,5 +1,13 @@
+import sys
+import os
 import unittest
-from app import app, db
+
+# Add the root directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app import app, db  # Import your Flask app and db instance
+
+
 
 class BasicTests(unittest.TestCase):
 
