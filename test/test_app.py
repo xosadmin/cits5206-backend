@@ -117,6 +117,17 @@ class BasicTests(unittest.TestCase):
         self.assertIn('Status', response.get_json())
 
 
+    
+    def test_delete_podcast(self):
+        token = self.test_login_user()
+        response = self.client.post('/deletepodcast', data=dict(
+            tokenID=token, 
+            podID=self.test_podcast.podID
+            ))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Status', response.get_json())
+
+
 
     
         
