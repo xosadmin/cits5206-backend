@@ -93,6 +93,17 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('noteID', response.get_json())
 
+    def test_add_podcast(self):
+    token = self.test_login_user()
+    response = self.client.post('/addpodcast', data=dict(
+        tokenID=token,
+        podName='New Podcast',
+        podUrl='http://example.com',
+        categoryID=self.test_category.categoryID
+    ))
+    self.assertEqual(response.status_code, 200)
+    self.assertIn('PodcastID', response.get_json())
+
 
 if __name__ == '__main__':
     unittest.main()
