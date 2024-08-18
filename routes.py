@@ -2,6 +2,7 @@ import os
 from operator import and_
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import *
+from werkzeug.utils import secure_filename
 from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
 from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire, deleteFile
 import logging
@@ -223,7 +224,7 @@ def list_subscriptions():
 def add_subscription():
     tokenContent = request.form.get('tokenID')
     userID = mapTokenUser(tokenContent)
-    libID = request.form.get('libID')  # 使用 libID 而不是 podID
+    libID = request.form.get('libID')
     
     if not userID or not libID:
         logger.error(f"Missing userID or libID: userID={userID}, libID={libID}")
@@ -232,7 +233,7 @@ def add_subscription():
     try:
         newSubscription = Subscriptions(
             userID=userID,
-            libID=libID,  # 使用正确的字段名
+            libID=libID,
             dateOfSub=getTime(readConf("systemConfig", "timezone"))
         )
         db.session.add(newSubscription)
@@ -278,16 +279,28 @@ def listcategory():
 def add_podcast():
     tokenContent = request.form.get('tokenID')
     podName = request.form.get('podName')
-    podUrl = request.form.get('podUrl')
     categoryID = request.form.get('categoryID')
     userID = mapTokenUser(tokenContent)
 
-    if not userID or not podName or not podUrl or not categoryID:
+    if not userID or not podName or not categoryID:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+    if 'file' not in request.files:
+        return jsonify({"Status": False, "Detailed Info": "No file part in the request"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"Status": False, "Detailed Info": "No selected file"}), 400
+    if not file.filename.endswith('.mp3'):
+        return jsonify({"Status": False, "Detailed Info": "Invalid file format. Only .mp3 files are allowed."}), 400
 
+    podID = uuidGen()
+    # Secure the filename to prevent directory traversal attacks
+    stored_filename = podID + ".mp3"
+    upload_path = os.path.join('static', 'podcasts', stored_filename)
     try:
+        # Save the file to the specified directory
+        file.save(upload_path)
         newPodcast = Podcasts(
-            podID=uuidGen(),
+            podID=podID,
             userID=userID,
             categoryID=categoryID,
             podName=podName,
@@ -299,7 +312,7 @@ def add_podcast():
         db.session.commit()
         return jsonify({"Status": True, "PodcastID": newPodcast.podID})
     except Exception as e:
-        logger.error(f"Error adding podcast: {e}")
+        logger.error(f"Error uploading file: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/deletepodcast", methods=["POST"])
@@ -353,6 +366,34 @@ def delete_podcast():
     except Exception as e:
         logger.error(f"Error deleting podcast: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+
+@mainBluePrint.route("/uploadvoicenote", methods=["POST"])
+def upload_voice_note():
+    tokenContent = request.form.get('tokenID')
+    userID = mapTokenUser(tokenContent)
+    if userID:
+        if 'file' not in request.files:
+            return jsonify({"Status": False, "Detailed Info": "No file part in the request"}), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"Status": False, "Detailed Info": "No selected file"}), 400
+        if not file.filename.endswith('.mp3'):
+            return jsonify({"Status": False, "Detailed Info": "Invalid file format. Only .mp3 files are allowed."}), 400
+        # Secure the filename to prevent directory traversal attacks
+        filename = secure_filename(file.filename)
+        date = getTime(readConf("systemConfig","timezone"))
+        stored_filename = filename.split(".")[0] + "_" + userID + "_" + str(date) + ".mp3"
+        upload_path = os.path.join('static', 'notes', stored_filename)
+        try:
+            # Save the file to the specified directory
+            file.save(upload_path)
+            return jsonify({"Status": True, "Detailed Info": "File successfully uploaded", "filename": filename})
+        except Exception as e:
+            logger.error(f"Error uploading file: {e}")
+            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+
 
 @mainBluePrint.route("/routes")
 def list_routes():
