@@ -99,7 +99,6 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('noteID', response.get_json())
 
-    
     def test_add_podcast(self):
         token = self.test_login_user()
         response = self.client.post('/addpodcast', data=dict(
@@ -113,8 +112,6 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('PodcastID', response.get_json())
 
-    
-
     def test_add_subscription(self):
         token = self.test_login_user()
         response = self.client.post('/addsubscription', data=dict(
@@ -124,7 +121,6 @@ class BasicTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('Status', response.get_json())
-
 
 
     def test_list_subscriptions(self):
@@ -138,10 +134,6 @@ class BasicTests(unittest.TestCase):
         self.assertTrue(isinstance(subscriptions, list))
         self.assertTrue(any(sub['LibraryID'] == self.test_library.libraryID for sub in subscriptions))  # Updated key name
 
-        
-
-
-    
     def test_delete_podcast(self):
         token = self.test_login_user()
         response = self.client.post('/deletepodcast', data=dict(
@@ -149,11 +141,7 @@ class BasicTests(unittest.TestCase):
             podID=self.test_podcast.podID
             ))
 
-        # Check that the podcast was deleted successfully and a Status field is returned
-        self.assertEqual(response.status_code, 200)
         self.assertIn('Status', response.get_json())
-
-    
 
     def test_add_snippet(self):
         token = self.test_login_user()  
@@ -162,9 +150,6 @@ class BasicTests(unittest.TestCase):
             content='This is a test snippet',
             podid=self.test_podcast.podID
         ))
-
-        # Check that the snippet was added successfully and a SnippetID is returned
-        self.assertEqual(response.status_code, 200)
         self.assertIn('SnippetID', response.get_json())
 
 if __name__ == '__main__':

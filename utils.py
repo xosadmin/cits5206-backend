@@ -45,3 +45,11 @@ def readConf(section, key):
     except (configparser.NoSectionError, configparser.NoOptionError) as e:
         logger.error(f"Error reading config: {e}")
         raise
+
+def deleteFile(dir,name):
+    podcast_path = os.path.join('static', dir, name)
+    if os.path.exists(podcast_path):
+        os.remove(podcast_path)
+        return 0
+    else:
+        return 1

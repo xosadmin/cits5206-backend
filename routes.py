@@ -1,14 +1,14 @@
+import os
 from operator import and_
 from flask import Blueprint, current_app, jsonify, request
-from sqlalchemy import update
+from sqlalchemy import *
 from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
-from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire
+from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire, deleteFile
 import logging
 
 logger = logging.getLogger(__name__)
 mainBluePrint = Blueprint('mainBluePrint', __name__)
 
-# Helper functions
 def checkIfUserExists(username):
     return Users.query.filter(Users.username == username).first() is not None
 
@@ -242,11 +242,6 @@ def add_subscription():
         logger.error(f"Error adding subscription: {e}")
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
 
-
-
-
-
-
 @mainBluePrint.route("/listlibrary", methods=["POST"])
 def listlibrary():
     tokenContent = request.form.get('tokenID')
@@ -318,6 +313,39 @@ def delete_podcast():
 
     try:
         Podcasts.query.filter(Podcasts.podID == podID).delete()
+        db.session.commit()
+        deleteFile('podcasts', f'{podID}.mp3')
+        return jsonify({"Status": True})
+    except Exception as e:
+        logger.error(f"Error deleting podcast: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+
+@mainBluePrint.route("/deletenote", methods=["POST"])
+def delete_podcast():
+    tokenContent = request.form.get('tokenID')
+    noteID = request.form.get('noteID')
+    userID = mapTokenUser(tokenContent)
+
+    if not userID or not noteID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+    try:
+        Notes.query.filter(Notes.noteID == noteID).delete()
+        db.session.commit()
+        return jsonify({"Status": True})
+    except Exception as e:
+        logger.error(f"Error deleting podcast: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+
+@mainBluePrint.route("/deletesnippet", methods=["POST"])
+def delete_podcast():
+    tokenContent = request.form.get('tokenID')
+    snippetID = request.form.get('snippetID')
+    userID = mapTokenUser(tokenContent)
+
+    if not userID or not snippetID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+    try:
+        Snippets.query.filter(Snippets.snipID == snippetID).delete()
         db.session.commit()
         return jsonify({"Status": True})
     except Exception as e:
