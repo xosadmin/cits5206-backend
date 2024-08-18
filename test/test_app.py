@@ -1,7 +1,7 @@
 import os, sys
 import unittest
 from app import create_app, db
-from models.sqlmodel import Users, Podcasts, PodCategory
+from models.sqlmodel import Library, Users, Podcasts, PodCategory
 from utils import readConf, uuidGen, md5Calc, getTime
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -17,10 +17,9 @@ class BasicTests(unittest.TestCase):
         db.drop_all()
         db.create_all()
 
-        # Get timezone value safely using readConf
         timezone = readConf("systemConfig", "timezone")
 
-        # Create a test user and commit it
+        # Create a test user
         self.test_user = Users(
             userID=uuidGen(),
             username='testuser',
@@ -28,29 +27,36 @@ class BasicTests(unittest.TestCase):
             role='user'
         )
         db.session.add(self.test_user)
-        db.session.commit()  # Ensure the user is committed before using the userID
+        db.session.commit()
 
-        # Create a test podcast category and commit it
+        # Create a test podcast category
         self.test_category = PodCategory(
             categoryID=uuidGen(),
             categoryName='Test Category'
         )
         db.session.add(self.test_category)
-        db.session.commit()  # Ensure the category is committed before using the categoryID
+        db.session.commit()
 
-        # Create a test podcast using the committed userID and categoryID
+        # Create a test podcast
         self.test_podcast = Podcasts(
             podID=uuidGen(),
-            userID=self.test_user.userID,  # Use the committed userID
-            categoryID=self.test_category.categoryID,  # Use the committed categoryID
+            userID=self.test_user.userID,
+            categoryID=self.test_category.categoryID,
             podName='Test Podcast',
             podUrl='http://example.com',
             updateDate=getTime(timezone)
         )
         db.session.add(self.test_podcast)
-        db.session.commit()  # Ensure the podcast is committed
+        db.session.commit()
 
-
+        # Create a test library
+        self.test_library = Library(
+            libraryID=uuidGen(),
+            userID=self.test_user.userID,
+            libraryName='Test Library'
+        )
+        db.session.add(self.test_library)
+        db.session.commit()
 
     def tearDown(self):
         db.session.remove()
@@ -108,30 +114,29 @@ class BasicTests(unittest.TestCase):
         self.assertIn('PodcastID', response.get_json())
 
     
-    
+
     def test_add_subscription(self):
         token = self.test_login_user()
         response = self.client.post('/addsubscription', data=dict(
             tokenID=token, 
-            podID=self.test_podcast.podID
-            ))
+            libID=self.test_library.libraryID  # 使用 libID 而不是 podID
+        ))
 
-        # Check that the subscription was successful and a Status field is returned
         self.assertEqual(response.status_code, 200)
         self.assertIn('Status', response.get_json())
 
 
-    
+
     def test_list_subscriptions(self):
         token = self.test_login_user()
         # Add a subscription to ensure there is data to list
         self.test_add_subscription()
         response = self.client.post('/listsubscription', data=dict(tokenID=token))
-        # Check that the response is a list and contains the subscribed podcast
+        # Check that the response is a list and contains the subscribed library
         self.assertEqual(response.status_code, 200)
         subscriptions = response.get_json()
         self.assertTrue(isinstance(subscriptions, list))
-        self.assertTrue(any(sub['PodcastID'] == self.test_podcast.podID for sub in subscriptions))
+        self.assertTrue(any(sub['LibraryID'] == self.test_library.libraryID for sub in subscriptions))  # Updated key name
 
         
 
@@ -161,15 +166,6 @@ class BasicTests(unittest.TestCase):
         # Check that the snippet was added successfully and a SnippetID is returned
         self.assertEqual(response.status_code, 200)
         self.assertIn('SnippetID', response.get_json())
-
-    
-
-
-
-
-    
-        
-
 
 if __name__ == '__main__':
     unittest.main()

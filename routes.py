@@ -1,12 +1,38 @@
 from operator import and_
-from flask import *
-from sqlalchemy import *
+from flask import Blueprint, current_app, jsonify, request
+from sqlalchemy import update
 from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
 from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire
 import logging
 
 logger = logging.getLogger(__name__)
 mainBluePrint = Blueprint('mainBluePrint', __name__)
+
+# Helper functions
+def checkIfUserExists(username):
+    return Users.query.filter(Users.username == username).first() is not None
+
+def mapTokenUser(token):
+    if not token:
+        logger.warning("No token provided")
+        return None
+
+    query = Tokens.query.filter(Tokens.token == token).first()
+    if query:
+        if CheckIfExpire(query.dateIssue, int(readConf("systemConfig", "tokenExpireDays")), readConf("systemConfig","timezone")):
+            logger.warning(f"Token {token} expired")
+            return None
+        return query.userID
+
+    logger.warning(f"Token {token} not found")
+    return None
+
+def validate_required_fields(data, required_fields):
+    """Check if the required fields are present in the data."""
+    for field in required_fields:
+        if not data.get(field):
+            return False, field
+    return True, None
 
 @mainBluePrint.route("/")
 def index():
@@ -40,6 +66,7 @@ def doLogin():
 def doRegister():
     username = request.form.get('username')
     password = request.form.get('password')
+
     if not username or not password:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
@@ -60,85 +87,88 @@ def changePswd():
     tokenContent = request.form.get('tokenID')
     userID = mapTokenUser(tokenContent)
     password = request.form.get('password')
-    if userID and password:
-        try:
-            md5password = md5Calc(password)
-            db.session.execute(update(Users).filter(Users.userID == userID).values(password=md5password))
-            db.session.commit()
-            return jsonify({"Status": True, "userID": userID})
-        except Exception as e:
-            logger.error(e)
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    
+    if not userID or not password:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    try:
+        md5password = md5Calc(password)
+        db.session.execute(update(Users).filter(Users.userID == userID).values(password=md5password))
+        db.session.commit()
+        return jsonify({"Status": True, "userID": userID})
+    except Exception as e:
+        logger.error(f"Error changing password: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/addsnippet", methods=["POST"])
 def addSnippet():
     tokenContent = request.form.get('tokenID')
     content = request.form.get('content')
     podid = request.form.get('podid')
-    snipID = uuidGen()
-    datecreated = getTime(readConf("systemConfig","timezone"))
+
+    if not tokenContent or not content or not podid:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
     userID = mapTokenUser(tokenContent)
-    if userID and content and podid:
-        try:
-            newSnippet = Snippets(snipID=snipID, userID=userID, podID=podid, snippetContent=content, dateCreated=datecreated)
-            db.session.add(newSnippet)
-            db.session.commit()
-            return jsonify({"Status": True, "SnippetID": snipID})
-        except Exception as e:
-            logger.error(e)
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    snipID = uuidGen()
+    datecreated = getTime(readConf("systemConfig", "timezone"))
+
+    try:
+        newSnippet = Snippets(snipID=snipID, userID=userID, podID=podid, snippetContent=content, dateCreated=datecreated)
+        db.session.add(newSnippet)
+        db.session.commit()
+        return jsonify({"Status": True, "SnippetID": snipID})
+    except Exception as e:
+        logger.error(f"Error adding snippet: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/addnote", methods=["POST"])
 def doaddnote():
     tokenContent = request.form.get('tokenID')
     content = request.form.get('content')
     podid = request.form.get('podid')
-    noteid = uuidGen()
-    datecreated = getTime(readConf("systemConfig","timezone"))
+
+    if not tokenContent or not content or not podid:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
     userID = mapTokenUser(tokenContent)
-    if userID and content:
-        try:
-            newNote = Notes(noteID=noteid, userID=userID, dateCreated=datecreated, content=content, podID=podid)
-            db.session.add(newNote)
-            db.session.commit()
-            return jsonify({"Status": True, "noteID": noteid})
-        except Exception as e:
-            logger.error(e)
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    noteid = uuidGen()
+    datecreated = getTime(readConf("systemConfig", "timezone"))
+
+    try:
+        newNote = Notes(noteID=noteid, userID=userID, dateCreated=datecreated, content=content, podID=podid)
+        db.session.add(newNote)
+        db.session.commit()
+        return jsonify({"Status": True, "noteID": noteid})
+    except Exception as e:
+        logger.error(f"Error adding note: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/listnotes", methods=["POST"])
 def get_notes():
     tokenContent = request.form.get('tokenID')
     userID = mapTokenUser(tokenContent)
-    if userID:
+    if not userID:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"}), 401
+
+    try:
         query = Notes.query.filter(Notes.userID == userID).all()
-        if query:
-            result = [
-                {
-                    "NoteID": item.noteID,
-                    "PodcastID": item.podID,
-                    "DateCreated": item.dateCreated
-                }
-                for item in query
-            ]
-            return jsonify(result)
-        else:
-            return jsonify({"Result": 0})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+        result = [{"NoteID": item.noteID, "PodcastID": item.podID, "DateCreated": item.dateCreated} for item in query]
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error retrieving notes: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/notedetails", methods=["POST"])
 def get_note_details():
     tokenContent = request.form.get('tokenID')
-    userID = mapTokenUser(tokenContent)
     noteID = request.form.get('noteID')
-    if userID and noteID:
+    userID = mapTokenUser(tokenContent)
+
+    if not userID or not noteID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    try:
         query = Notes.query.filter(Notes.noteID == noteID, Notes.userID == userID).first()
         if query:
             result = {
@@ -150,31 +180,26 @@ def get_note_details():
             return jsonify(result)
         else:
             return jsonify({"Result": 0})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
+    except Exception as e:
+        logger.error(f"Error retrieving note details: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/search", methods=["POST"])
 def dosearch():
     tokenContent = request.form.get('tokenID')
-    userID = mapTokenUser(tokenContent)
     searchQuery = request.form.get('query')
-    if userID and searchQuery:
-        try:
-            podcasts = Podcasts.query.filter(Podcasts.podName.like(f"%{searchQuery}%")).all()
-            result = [
-                {
-                    "PodcastID": podcast.podID,
-                    "PodcastName": podcast.podName,
-                    "PodcastURL": podcast.podUrl
-                }
-                for podcast in podcasts
-            ]
-            return jsonify(result)
-        except Exception as e:
-            print(e)
-            return jsonify({"Status": False, "Detailed Info": "Search failed. Internal Error occurred."})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    userID = mapTokenUser(tokenContent)
+
+    if not userID or not searchQuery:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    try:
+        podcasts = Podcasts.query.filter(Podcasts.podName.like(f"%{searchQuery}%")).all()
+        result = [{"PodcastID": podcast.podID, "PodcastName": podcast.podName, "PodcastURL": podcast.podUrl} for podcast in podcasts]
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error searching podcasts: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Search failed. Internal Error occurred."}), 500
 
 @mainBluePrint.route("/listsubscription", methods=["POST"])
 def list_subscriptions():
@@ -184,8 +209,8 @@ def list_subscriptions():
         subscriptions = Subscriptions.query.filter(Subscriptions.userID == userID).all()
         result = [
             {
-                "PodcastID": sub.podID,
-                "SubscriptionDate": sub.subscriptionDate
+                "LibraryID": sub.libID,  # Ensure this matches the logic used in the test
+                "SubscriptionDate": sub.dateOfSub
             }
             for sub in subscriptions
         ]
@@ -193,137 +218,117 @@ def list_subscriptions():
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
+
 @mainBluePrint.route("/addsubscription", methods=["POST"])
 def add_subscription():
     tokenContent = request.form.get('tokenID')
     userID = mapTokenUser(tokenContent)
-    podID = request.form.get('podID')
-    if userID and podID:
-        try:
-            newSubscription = Subscriptions(userID=userID, podID=podID, subscriptionDate=getTime(readConf("systemConfig","timezone")))
-            db.session.add(newSubscription)
-            db.session.commit()
-            return jsonify({"Status": True})
-        except Exception as e:
-            print(e)
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    libID = request.form.get('libID')  # 使用 libID 而不是 podID
+    
+    if not userID or not libID:
+        logger.error(f"Missing userID or libID: userID={userID}, libID={libID}")
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    try:
+        newSubscription = Subscriptions(
+            userID=userID,
+            libID=libID,  # 使用正确的字段名
+            dateOfSub=getTime(readConf("systemConfig", "timezone"))
+        )
+        db.session.add(newSubscription)
+        db.session.commit()
+        return jsonify({"Status": True})
+    except Exception as e:
+        logger.error(f"Error adding subscription: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
+
+
+
+
+
 
 @mainBluePrint.route("/listlibrary", methods=["POST"])
-def add_subscription():
+def listlibrary():
     tokenContent = request.form.get('tokenID')
     userID = mapTokenUser(tokenContent)
-    if userID:
-        try:
-            query = Library.query.filter(Library.userID == userID).all()
-            result = [
-                {
-                    "LibraryID": item.libraryID,
-                    "libraryName": item.libraryName
-                }
-                for item in query
-            ]
-            return jsonify(result)
-        except Exception as e:
-            print(e)
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+
+    if not userID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    try:
+        query = Library.query.filter(Library.userID == userID).all()
+        result = [{"LibraryID": item.libraryID, "libraryName": item.libraryName} for item in query]
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error listing library: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/listcategory", methods=["POST"])
-def add_subscription():
+def listcategory():
     tokenContent = request.form.get('tokenID')
     userID = mapTokenUser(tokenContent)
-    if userID:
-        try:
-            query = PodCategory.query.all()
-            result = [
-                {
-                    "CategoryID": item.categoryID,
-                    "categoryName": item.categoryName
-                }
-                for item in query
-            ]
-            return jsonify(result)
-        except Exception as e:
-            print(e)
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+
+    if not userID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    try:
+        query = PodCategory.query.all()
+        result = [{"CategoryID": item.categoryID, "categoryName": item.categoryName} for item in query]
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error listing categories: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/addpodcast", methods=["POST"])
 def add_podcast():
     tokenContent = request.form.get('tokenID')
-    userID = mapTokenUser(tokenContent)
-    podID = uuidGen()
     podName = request.form.get('podName')
     podUrl = request.form.get('podUrl')
     categoryID = request.form.get('categoryID')
-    update_date = getTime(readConf("systemConfig","timezone"))
+    userID = mapTokenUser(tokenContent)
 
-    if userID and podName and podUrl and categoryID:
-        try:
-            newPodcast = Podcasts(
-                podID=podID,
-                userID=userID,
-                categoryID=categoryID,
-                podName=podName,
-                podUrl=podUrl,
-                podDuration=0,
-                updateDate=update_date
-            )
-            db.session.add(newPodcast)
-            db.session.commit()
-            return jsonify({"Status": True, "PodcastID": podID})
-        except Exception as e:
-            logger.error(f"Error adding podcast: {e}")
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    if not userID or not podName or not podUrl or not categoryID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
-
+    try:
+        newPodcast = Podcasts(
+            podID=uuidGen(),
+            userID=userID,
+            categoryID=categoryID,
+            podName=podName,
+            podUrl=podUrl,
+            podDuration=0,
+            updateDate=getTime(readConf("systemConfig", "timezone"))
+        )
+        db.session.add(newPodcast)
+        db.session.commit()
+        return jsonify({"Status": True, "PodcastID": newPodcast.podID})
+    except Exception as e:
+        logger.error(f"Error adding podcast: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/deletepodcast", methods=["POST"])
 def delete_podcast():
     tokenContent = request.form.get('tokenID')
-    userID = mapTokenUser(tokenContent)
     podID = request.form.get('podID')
-    if userID and podID:
-        try:
-            Podcasts.query.filter(Podcasts.podID == podID).delete()
-            db.session.commit()
-            return jsonify({"Status": True})
-        except Exception as e:
-            print(e)
-            return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"})
-    else:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"})
+    userID = mapTokenUser(tokenContent)
+
+    if not userID or not podID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    try:
+        Podcasts.query.filter(Podcasts.podID == podID).delete()
+        db.session.commit()
+        return jsonify({"Status": True})
+    except Exception as e:
+        logger.error(f"Error deleting podcast: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/routes")
 def list_routes():
     output = []
-    for rule in app.url_map.iter_rules():
+    for rule in current_app.url_map.iter_rules():
         methods = ','.join(rule.methods)
         line = f"{rule.endpoint}: {rule.rule} [{methods}]"
         output.append(line)
     return jsonify(routes=output)
-
-# Helper functions
-def checkIfUserExists(username):
-    return Users.query.filter(Users.username == username).first() is not None
-
-def mapTokenUser(token):
-    if not token:
-        logger.warning("No token provided")
-        return None
-
-    query = Tokens.query.filter(Tokens.token == token).first()
-    if query:
-        if CheckIfExpire(query.dateIssue, int(readConf("systemConfig", "tokenExpireDays")), readConf("systemConfig","timezone")):
-            logger.warning(f"Token {token} expired")
-            return None
-        return query.userID
-
-    logger.warning(f"Token {token} not found")
-    return None
