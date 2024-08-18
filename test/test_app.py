@@ -102,6 +102,8 @@ class BasicTests(unittest.TestCase):
         podUrl='http://example.com',
         categoryID=self.test_category.categoryID
         ))
+
+        # Check that the podcast was added successfully and a PodcastID is returned
         self.assertEqual(response.status_code, 200)
         self.assertIn('PodcastID', response.get_json())
 
@@ -113,6 +115,8 @@ class BasicTests(unittest.TestCase):
             tokenID=token, 
             podID=self.test_podcast.podID
             ))
+
+        # Check that the subscription was successful and a Status field is returned
         self.assertEqual(response.status_code, 200)
         self.assertIn('Status', response.get_json())
 
@@ -120,8 +124,10 @@ class BasicTests(unittest.TestCase):
     
     def test_list_subscriptions(self):
         token = self.test_login_user()
+        # Add a subscription to ensure there is data to list
         self.test_add_subscription()
         response = self.client.post('/listsubscription', data=dict(tokenID=token))
+        # Check that the response is a list and contains the subscribed podcast
         self.assertEqual(response.status_code, 200)
         subscriptions = response.get_json()
         self.assertTrue(isinstance(subscriptions, list))
@@ -137,8 +143,27 @@ class BasicTests(unittest.TestCase):
             tokenID=token, 
             podID=self.test_podcast.podID
             ))
+
+        # Check that the podcast was deleted successfully and a Status field is returned
         self.assertEqual(response.status_code, 200)
         self.assertIn('Status', response.get_json())
+
+    
+
+    def test_add_snippet(self):
+        token = self.test_login_user()  
+        response = self.client.post('/addsnippet', data=dict(
+            tokenID=token,
+            content='This is a test snippet',
+            podid=self.test_podcast.podID
+        ))
+
+        # Check that the snippet was added successfully and a SnippetID is returned
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('SnippetID', response.get_json())
+
+    
+
 
 
 
