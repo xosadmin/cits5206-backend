@@ -292,11 +292,13 @@ def add_podcast():
     if not file.filename.endswith('.mp3'):
         return jsonify({"Status": False, "Detailed Info": "Invalid file format. Only .mp3 files are allowed."}), 400
 
-    podID = uuidGen()
-    # Secure the filename to prevent directory traversal attacks
-    stored_filename = podID + ".mp3"
-    upload_path = os.path.join('static', 'podcasts', stored_filename)
     try:
+        podID = uuidGen()
+        # Secure the filename to prevent directory traversal attacks
+        stored_filename = podID + ".mp3"
+        upload_path = os.path.join('static', 'podcasts', stored_filename)
+        podUrl = readConf("systemConfig","hostname") + "/" + upload_path
+
         # Save the file to the specified directory
         file.save(upload_path)
         newPodcast = Podcasts(
