@@ -118,6 +118,19 @@ class BasicTests(unittest.TestCase):
 
 
     
+    def test_list_subscriptions(self):
+        token = self.test_login_user()
+        self.test_add_subscription()
+        response = self.client.post('/listsubscription', data=dict(tokenID=token))
+        self.assertEqual(response.status_code, 200)
+        subscriptions = response.get_json()
+        self.assertTrue(isinstance(subscriptions, list))
+        self.assertTrue(any(sub['PodcastID'] == self.test_podcast.podID for sub in subscriptions))
+
+        
+
+
+    
     def test_delete_podcast(self):
         token = self.test_login_user()
         response = self.client.post('/deletepodcast', data=dict(
