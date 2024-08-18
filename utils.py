@@ -50,6 +50,6 @@ def deleteFile(dir,name):
     podcast_path = os.path.join('static', dir, name)
     if os.path.exists(podcast_path):
         os.remove(podcast_path)
-        return 0
+        return True
     else:
-        return 1
+        return False

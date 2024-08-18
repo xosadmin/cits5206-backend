@@ -314,8 +314,10 @@ def delete_podcast():
     try:
         Podcasts.query.filter(Podcasts.podID == podID).delete()
         db.session.commit()
-        deleteFile('podcasts', f'{podID}.mp3')
-        return jsonify({"Status": True})
+        if deleteFile('podcasts', f'{podID}.mp3'):
+            return jsonify({"Status": True})
+        else:
+            return jsonify({"Status": False, "Detailed Info": "The podcast cannot be deleted"}), 400
     except Exception as e:
         logger.error(f"Error deleting podcast: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
