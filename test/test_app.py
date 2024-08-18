@@ -95,15 +95,15 @@ class BasicTests(unittest.TestCase):
 
     
     def test_add_podcast(self):
-    token = self.test_login_user()
-    response = self.client.post('/addpodcast', data=dict(
+        token = self.test_login_user()
+        response = self.client.post('/addpodcast', data=dict(
         tokenID=token,
         podName='New Podcast',
         podUrl='http://example.com',
         categoryID=self.test_category.categoryID
-    ))
-    self.assertEqual(response.status_code, 200)
-    self.assertIn('PodcastID', response.get_json())
+        ))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('PodcastID', response.get_json())
 
     
     
@@ -115,6 +115,10 @@ class BasicTests(unittest.TestCase):
             ))
         self.assertEqual(response.status_code, 200)
         self.assertIn('Status', response.get_json())
+
+
+
+    
         
 
 
