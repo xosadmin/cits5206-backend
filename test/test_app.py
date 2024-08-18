@@ -93,6 +93,7 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('noteID', response.get_json())
 
+    
     def test_add_podcast(self):
     token = self.test_login_user()
     response = self.client.post('/addpodcast', data=dict(
@@ -103,6 +104,18 @@ class BasicTests(unittest.TestCase):
     ))
     self.assertEqual(response.status_code, 200)
     self.assertIn('PodcastID', response.get_json())
+
+    
+    
+    def test_add_subscription(self):
+        token = self.test_login_user()
+        response = self.client.post('/addsubscription', data=dict(
+            tokenID=token, 
+            podID=self.test_podcast.podID
+            ))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Status', response.get_json())
+        
 
 
 if __name__ == '__main__':
