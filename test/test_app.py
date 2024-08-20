@@ -116,7 +116,7 @@ class BasicTests(unittest.TestCase):
         token = self.test_login_user()
         response = self.client.post('/addsubscription', data=dict(
             tokenID=token, 
-            libID=self.test_library.libraryID  # 使用 libID 而不是 podID
+            libID=self.test_library.libraryID  #  library instead of podID
         ))
 
         self.assertEqual(response.status_code, 200)

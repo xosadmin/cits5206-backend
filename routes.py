@@ -338,7 +338,7 @@ def delete_podcast():
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/deletenote", methods=["POST"])
-def delete_podcast():
+def delete_note():
     tokenContent = request.form.get('tokenID')
     noteID = request.form.get('noteID')
     userID = mapTokenUser(tokenContent)
@@ -354,7 +354,7 @@ def delete_podcast():
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/deletesnippet", methods=["POST"])
-def delete_podcast():
+def delete_snippet():
     tokenContent = request.form.get('tokenID')
     snippetID = request.form.get('snippetID')
     userID = mapTokenUser(tokenContent)
