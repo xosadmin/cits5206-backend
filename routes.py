@@ -5,6 +5,7 @@ from sqlalchemy import *
 from werkzeug.utils import secure_filename
 from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
 from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire, deleteFile
+from mailsend import sendmail
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,6 @@ def mapTokenUser(token):
     return None
 
 def validate_required_fields(data, required_fields):
-    """Check if the required fields are present in the data."""
     for field in required_fields:
         if not data.get(field):
             return False, field
