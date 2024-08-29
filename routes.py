@@ -68,8 +68,15 @@ def doRegister():
     username = request.form.get('username')
     password = request.form.get('password')
 
+    # Define a maximum allowed length for the username
+    max_username_length = 255
+
     if not username or not password:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    # Check if the username exceeds the maximum allowed length
+    if len(username) > max_username_length:
+        return jsonify({"Status": False, "Detailed Info": "Username is too long"}), 400
 
     if checkIfUserExists(username):
         return jsonify({"Status": False, "Detailed Info": "User already exists"}), 409
@@ -82,6 +89,7 @@ def doRegister():
     except Exception as e:
         logger.error(f"Error registering user: {e}")
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
+
 
 @mainBluePrint.route("/changepass", methods=["POST"])
 def changePswd():
