@@ -391,7 +391,7 @@ def upload_voice_note():
             return jsonify({"Status": False, "Detailed Info": "Invalid file format. Only .mp3 files are allowed."}), 400
         # Secure the filename to prevent directory traversal attacks
         filename = secure_filename(file.filename)
-        date = getTime(readConf("systemConfig","timezone")).strftime("%Y-%m-%d")
+        date = getTime(readConf("systemConfig","timezone"),1)
         stored_filename = filename.split(".")[0] + "_" + userID + "_" + str(date) + ".mp3"
         upload_path = os.path.join('static', 'notes', stored_filename)
         try:

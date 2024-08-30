@@ -12,9 +12,12 @@ logger = logging.getLogger(__name__)
 def uuidGen():
     return str(uuid.uuid4())
 
-def getTime(tz):
+def getTime(tz, switch=0):
     tz = pytz.timezone(tz)
-    timenow = datetime.now(tz).strftime("%d/%m/%Y-%H:%M:%S")
+    if switch == 1:
+        timenow = datetime.now(tz).strftime("%d-%m-%Y")
+    else:
+        timenow = datetime.now(tz).strftime("%d/%m/%Y-%H:%M:%S")
     return timenow
 
 def CheckIfExpire(dateIssue, expDays, tz_utc):
