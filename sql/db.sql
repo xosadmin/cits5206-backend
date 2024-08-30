@@ -151,6 +151,15 @@ CREATE TABLE `podCategory` (
     `categoryName` VARCHAR(256)
 );
 
+-- Create `resettokens` table
+CREATE TABLE `resettokens` (
+    `rtID` VARCHAR(256) PRIMARY KEY,
+    `userID` VARCHAR(256) NOT NULL,
+    `token` VARCHAR(256) NOT NULL,
+    `dateCreated` VARCHAR(256) NOT NULL,
+    `used` INTEGER NOT NULL DEFAULT 0,
+    CONSTRAINT `resetTokenFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`)
+);
 
 CREATE INDEX idx_users_username ON users (username);
 CREATE INDEX idx_tokens_token ON tokens (token);

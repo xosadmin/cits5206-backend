@@ -60,3 +60,11 @@ class PodCategory(db.Model):
     __tablename__ = 'podCategory'
     categoryID = db.Column(db.String(256), primary_key=True, default=uuidGen)
     categoryName = db.Column(db.String(256), nullable=False)
+
+class ResetTokens(db.Model):
+    __tablename__ = 'resettokens'
+    rtID = db.Column(db.String(256), primary_key=True, default=uuidGen)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    token = db.Column(db.Text, nullable=False)
+    dateCreated = db.Column(db.String(256), nullable=False)
+    used = db.Column(db.Integer, nullable=False, default=0)

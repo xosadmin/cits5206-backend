@@ -1,3 +1,4 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -11,6 +12,54 @@ def readFile(path):
     except Exception as e:
         print(e)
         return None
+    
+def pswdEmailGen(tokenID,username):
+    urlHead = readConf("systemConfig","hostname")
+    resetLink = urlHead + "/confirmreset/" + tokenID
+    content = f"""
+    Dear {username},
+
+    We received a request to reset your password. Please click the link below to reset your password:
+
+    {resetLink}
+
+    If you cannot click on the link above, please copy it and paste on your browser to open.
+
+    Please note that this link will expire in 24 hours. If you did not request a password reset, please ignore this email and your account will remain secure.
+
+    Thank you for using our service!
+
+    Best regards,
+    """
+    try:
+        file = open("template/resetpassword-"+tokenID+".html","a")
+        for item in content:
+            file.write(item + "\n")
+        file.close()
+        return True
+    except Exception as e:
+        print("Error: " + e)
+        return False
+    
+def finalpswdEmailGen(initPassword,username,tokenID):
+    content = f"""
+    Dear {username},
+
+    Your password has been set to {initPassword}
+
+    Best regards,
+    """
+    try:
+        if os.path.exists("template/resetpasswordcomplete-"+tokenID+".html"):
+            os.remove("template/resetpasswordcomplete-"+tokenID+".html")
+        file = open("template/resetpasswordcomplete-"+tokenID+".html","a")
+        for item in content:
+            file.write(item + "\n")
+        file.close()
+        return True
+    except Exception as e:
+        print("Error: " + e)
+        return False
 
 def sendmail(receiver, subject, contentTempPath):
     sender_email = readConf("mail", "senderMail")

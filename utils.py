@@ -4,6 +4,7 @@ from datetime import datetime,timedelta
 import uuid
 import hashlib
 import pytz
+import random
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -53,3 +54,10 @@ def deleteFile(dir,name):
         return True
     else:
         return False
+
+def passwordGen():
+    symbols = "1234567890abcdefghijklmnopqrstuvwxyz!@#$%^&*()"
+    value = ""
+    for i in range(0,10):
+        value += symbols[random.randint(0,len(symbols)-1)]
+    return value

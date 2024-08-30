@@ -3,9 +3,9 @@ from operator import and_
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import *
 from werkzeug.utils import secure_filename
-from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory
-from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire, deleteFile
-from mailsend import sendmail
+from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory, ResetTokens
+from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire, deleteFile, passwordGen
+from mailsend import sendmail, pswdEmailGen, finalpswdEmailGen
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,8 +41,8 @@ def index():
 
 @mainBluePrint.route("/login", methods=["POST"])
 def doLogin():
-    username = request.form.get('username')
-    password = request.form.get('password')
+    username = request.form.get('username',None)
+    password = request.form.get('password',None)
     if not username or not password:
         logger.warning("Invalid parameters for login")
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
@@ -65,8 +65,8 @@ def doLogin():
 
 @mainBluePrint.route("/register", methods=["POST"])
 def doRegister():
-    username = request.form.get('username')
-    password = request.form.get('password')
+    username = request.form.get('username',None)
+    password = request.form.get('password',None)
 
     # Define a maximum allowed length for the username
     max_username_length = 255
@@ -93,9 +93,9 @@ def doRegister():
 
 @mainBluePrint.route("/changepass", methods=["POST"])
 def changePswd():
-    tokenContent = request.form.get('tokenID')
+    tokenContent = request.form.get('tokenID',None)
     userID = mapTokenUser(tokenContent)
-    password = request.form.get('password')
+    password = request.form.get('password',None)
     
     if not userID or not password:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
@@ -111,9 +111,9 @@ def changePswd():
 
 @mainBluePrint.route("/addsnippet", methods=["POST"])
 def addSnippet():
-    tokenContent = request.form.get('tokenID')
-    content = request.form.get('content')
-    podid = request.form.get('podid')
+    tokenContent = request.form.get('tokenID',None)
+    content = request.form.get('content',None)
+    podid = request.form.get('podid',None)
 
     if not tokenContent or not content or not podid:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
@@ -133,9 +133,9 @@ def addSnippet():
 
 @mainBluePrint.route("/addnote", methods=["POST"])
 def doaddnote():
-    tokenContent = request.form.get('tokenID')
-    content = request.form.get('content')
-    podid = request.form.get('podid')
+    tokenContent = request.form.get('tokenID',None)
+    content = request.form.get('content',None)
+    podid = request.form.get('podid',None)
 
     if not tokenContent or not content or not podid:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
@@ -155,7 +155,7 @@ def doaddnote():
 
 @mainBluePrint.route("/listnotes", methods=["POST"])
 def get_notes():
-    tokenContent = request.form.get('tokenID')
+    tokenContent = request.form.get('tokenID',None)
     userID = mapTokenUser(tokenContent)
     if not userID:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"}), 401
@@ -170,8 +170,8 @@ def get_notes():
 
 @mainBluePrint.route("/notedetails", methods=["POST"])
 def get_note_details():
-    tokenContent = request.form.get('tokenID')
-    noteID = request.form.get('noteID')
+    tokenContent = request.form.get('tokenID',None)
+    noteID = request.form.get('noteID',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID or not noteID:
@@ -195,8 +195,8 @@ def get_note_details():
 
 @mainBluePrint.route("/search", methods=["POST"])
 def dosearch():
-    tokenContent = request.form.get('tokenID')
-    searchQuery = request.form.get('query')
+    tokenContent = request.form.get('tokenID',None)
+    searchQuery = request.form.get('query',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID or not searchQuery:
@@ -212,7 +212,7 @@ def dosearch():
 
 @mainBluePrint.route("/listsubscription", methods=["POST"])
 def list_subscriptions():
-    tokenContent = request.form.get('tokenID')
+    tokenContent = request.form.get('tokenID',None)
     userID = mapTokenUser(tokenContent)
     if userID:
         subscriptions = Subscriptions.query.filter(Subscriptions.userID == userID).all()
@@ -230,9 +230,9 @@ def list_subscriptions():
 
 @mainBluePrint.route("/addsubscription", methods=["POST"])
 def add_subscription():
-    tokenContent = request.form.get('tokenID')
+    tokenContent = request.form.get('tokenID',None)
     userID = mapTokenUser(tokenContent)
-    libID = request.form.get('libID')
+    libID = request.form.get('libID',None)
     
     if not userID or not libID:
         logger.error(f"Missing userID or libID: userID={userID}, libID={libID}")
@@ -253,7 +253,7 @@ def add_subscription():
 
 @mainBluePrint.route("/listlibrary", methods=["POST"])
 def listlibrary():
-    tokenContent = request.form.get('tokenID')
+    tokenContent = request.form.get('tokenID',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID:
@@ -269,7 +269,7 @@ def listlibrary():
 
 @mainBluePrint.route("/listcategory", methods=["POST"])
 def listcategory():
-    tokenContent = request.form.get('tokenID')
+    tokenContent = request.form.get('tokenID',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID:
@@ -285,9 +285,9 @@ def listcategory():
 
 @mainBluePrint.route("/addpodcast", methods=["POST"])
 def add_podcast():
-    tokenContent = request.form.get('tokenID')
-    podName = request.form.get('podName')
-    categoryID = request.form.get('categoryID')
+    tokenContent = request.form.get('tokenID',None)
+    podName = request.form.get('podName',None)
+    categoryID = request.form.get('categoryID',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID or not podName or not categoryID:
@@ -327,8 +327,8 @@ def add_podcast():
 
 @mainBluePrint.route("/deletepodcast", methods=["POST"])
 def delete_podcast():
-    tokenContent = request.form.get('tokenID')
-    podID = request.form.get('podID')
+    tokenContent = request.form.get('tokenID',None)
+    podID = request.form.get('podID',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID or not podID:
@@ -347,8 +347,8 @@ def delete_podcast():
 
 @mainBluePrint.route("/deletenote", methods=["POST"])
 def delete_note():
-    tokenContent = request.form.get('tokenID')
-    noteID = request.form.get('noteID')
+    tokenContent = request.form.get('tokenID',None)
+    noteID = request.form.get('noteID',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID or not noteID:
@@ -363,8 +363,8 @@ def delete_note():
 
 @mainBluePrint.route("/deletesnippet", methods=["POST"])
 def delete_snippet():
-    tokenContent = request.form.get('tokenID')
-    snippetID = request.form.get('snippetID')
+    tokenContent = request.form.get('tokenID',None)
+    snippetID = request.form.get('snippetID',None)
     userID = mapTokenUser(tokenContent)
 
     if not userID or not snippetID:
@@ -379,7 +379,7 @@ def delete_snippet():
 
 @mainBluePrint.route("/uploadvoicenote", methods=["POST"])
 def upload_voice_note():
-    tokenContent = request.form.get('tokenID')
+    tokenContent = request.form.get('tokenID',None)
     userID = mapTokenUser(tokenContent)
     if userID:
         if 'file' not in request.files:
@@ -404,12 +404,54 @@ def upload_voice_note():
     else:
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
+@mainBluePrint.route("/resetpasswordmail", methods=["POST"])
+def resetPswdSt1():
+    username = request.form.get("username")
+    if username:
+        query = Users.query.filter(Users.username == username).first()
+        if query:
+            try:
+                userid = query.userID
+                token = uuidGen()
+                dateCreated = getTime()
+                reset_token = ResetTokens(userid=userid, token=token, dateCreated=dateCreated, used=0)
+                db.session.add(reset_token)
+                db.session.commit()
+                pswdEmailGen(token, username)
+                sendmail(username, "Password Reset Confirmation", f"templates/resetpassword-{token}.html")
+                return jsonify({"Status": True, "Detailed Info": "Reset Password Mail Sent"})
+            except Exception as e:
+                db.session.rollback()
+                print(f'Error while sending email: {e}')
+                return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+        else:
+            return jsonify({"Status": False, "Detailed Info": "Invalid Username"}), 400
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid parameter"}), 400
 
-@mainBluePrint.route("/routes")
-def list_routes():
-    output = []
-    for rule in current_app.url_map.iter_rules():
-        methods = ','.join(rule.methods)
-        line = f"{rule.endpoint}: {rule.rule} [{methods}]"
-        output.append(line)
-    return jsonify(routes=output)
+
+@mainBluePrint.route("/confirmreset/<token>", methods=["GET"])
+def resetPswdSt2(token):
+    token_record = ResetTokens.query.filter(ResetTokens.token == token).first()
+    if token_record:
+        if token_record.used == 0:
+            user = Users.query.filter(Users.userID == token_record.userID).first()
+            if user:
+                new_password = passwordGen
+                user.password = md5Calc(new_password)
+                token_record.used = 1
+                try:
+                    db.session.commit()
+                    finalpswdEmailGen(new_password, user.username, token)
+                    sendmail(user.username, "Your password is reset", f"templates/resetpasswordcomplete-{token}.html")
+                    return jsonify({"Status": True, "Detailed Info": "Password reset."})
+                except Exception as e:
+                    db.session.rollback()
+                    print(f'Error during reset: {e}')
+                    return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+            else:
+                return jsonify({"Status": False, "Detailed Info": "User not found"}), 400
+        else:
+            return jsonify({"Status": False, "Detailed Info": "Invalid Token"}), 400
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Token"}), 400
