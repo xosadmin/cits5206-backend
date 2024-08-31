@@ -180,6 +180,17 @@ class BasicTests(unittest.TestCase):
         response = self.client.post('/listnotes', data=dict(tokenID=token))
         notes = response.get_json()
         self.assertEqual(len(notes), 10)
+    
+    
+    def test_delete_note(self):
+        """Test deleting a note."""
+        token = self.test_login_user()
+        response = self.client.post('/addnote', data=dict(tokenID=token, content='Note to Delete', podid=self.test_podcast.podID))
+        self.assertEqual(response.status_code, 200)
+        note_id = response.get_json()['noteID']
+        response = self.client.post('/deletenote', data=dict(tokenID=token, noteID=note_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Status', response.get_json())
 
 if __name__ == '__main__':
     unittest.main()
