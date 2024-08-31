@@ -117,6 +117,27 @@ class BasicTests(unittest.TestCase):
                 })
                 self.assertEqual(response.status_code, 200)
                 self.assertIn('PodcastID', response.get_json())
+    
+
+    def test_delete_podcast(self):
+        """Testing deleteing a podcast."""
+        
+        token = self.test_login_user()
+        with open('test_podcast.mp3', 'rb') as podcast_file:
+            response = self.client.post('/addpodcast', data={
+            'tokenID': token,
+            'podName': 'Podcast to Delete',
+            'categoryID': self.test_category.categoryID,
+            'file': podcast_file
+        })
+            self.assertEqual(response.status_code, 200)
+            podcast_id = response.get_json()['PodcastID']
+
+    
+        response = self.client.post('/deletepodcast', data=dict(tokenID=token, podID=podcast_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Status', response.get_json())
+        
 
     def test_add_subscription(self):
         """Test adding a subscription."""
