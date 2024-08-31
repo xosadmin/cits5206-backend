@@ -192,5 +192,21 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Status', response.get_json())
 
+    
+    def test_upload_voice_note(self):
+        """Test uploading a voice note."""
+        token = self.test_login_user()
+        with self.app.test_client() as client:
+            with open('test_voice_note.mp3', 'wb') as f:
+                f.write(b'Test Voice Note Content')
+            with open('test_voice_note.mp3', 'rb') as voice_note_file:
+                response = client.post('/uploadvoicenote', data={
+                    'tokenID': token,
+                    'file': voice_note_file
+                })
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('Status', response.get_json())
+                
+
 if __name__ == '__main__':
     unittest.main()
