@@ -3,7 +3,9 @@ CREATE TABLE `users` (
     `userID` VARCHAR(256) PRIMARY KEY,
     `username` VARCHAR(80) NOT NULL UNIQUE,
     `password` VARCHAR(120) NOT NULL,
-    `role` VARCHAR(50) NOT NULL
+    `firstname` VARCHAR(120) NOT NULL,
+    `lastname` VARCHAR(120) NOT NULL,
+    `dob` VARCHAR(120) NOT NULL
 );
 
 -- Add a test admin user with password admin

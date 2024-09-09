@@ -90,6 +90,19 @@ def doRegister():
         logger.error(f"Error registering user: {e}")
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
 
+@mainBluePrint.route("/setuserinfo", methods=["POST"])
+def setUserInfo():
+    userID = request.form.get('userID',None)
+    firstname = request.form.get('firstname',None)
+    lastname = request.form.get('lastname',None)
+    dob = request.form.get('dob',None)
+    if not userID or not firstname or not lastname or not dob:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+    else:
+        query = Update(Users).filter(Users.userID==userID).values(firstname=firstname, lastname=lastname, dob=dob)
+        db.session.execute(query)
+        db.session.commit()
+        return jsonify({"Status": True, "userID": userID})
 
 @mainBluePrint.route("/changepass", methods=["POST"])
 def changePswd():

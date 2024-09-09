@@ -8,7 +8,9 @@ class Users(db.Model):
     userID = db.Column(db.String(256), primary_key=True, default=uuidGen)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(50), nullable=False, default='user')
+    firstname = db.Column(db.String(120), nullable=False, default="Firstname")
+    lastname = db.Column(db.String(120), nullable=False, default="Lastname")
+    dob = db.Column(db.String(120), nullable=False, default="1/1/1970")
 
 class Tokens(db.Model):
     __tablename__ = 'tokens'
