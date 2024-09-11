@@ -47,7 +47,9 @@ class BasicTests(unittest.TestCase):
             userID=uuidGen(),
             username='testuser',
             password=md5Calc('testpassword'),
-            role='user'
+            firstname = 'test',
+            lastname =  'user',
+            dob = '1/1/2000'
         )
         db.session.add(self.test_user)
         db.session.commit()
@@ -262,8 +264,6 @@ class BasicTests(unittest.TestCase):
         token = self.login_and_get_token()
         response = self.client.post('/addnote', data=dict(tokenID=token, podid=self.test_podcast.podID))
         self.assertEqual(response.status_code, 400)
-
-
 
     def test_database_error_handling(self):
         """Test how the app handles a database error."""

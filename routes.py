@@ -65,8 +65,8 @@ def doLogin():
 
 @mainBluePrint.route("/register", methods=["POST"])
 def doRegister():
-    username = request.form.get('username',None)
-    password = request.form.get('password',None)
+    username = request.form.get('username', None)
+    password = request.form.get('password', None)
 
     # Define a maximum allowed length for the username
     max_username_length = 255
@@ -82,13 +82,21 @@ def doRegister():
         return jsonify({"Status": False, "Detailed Info": "User already exists"}), 409
 
     try:
-        newUser = Users(userID=uuidGen(), username=username, password=md5Calc(password), role="user")
+        newUser = Users(
+            userID=uuidGen(),
+            username=username,
+            password=md5Calc(password),
+            firstname = request.form.get('firstname', "Default Firstname"),
+            lastname = request.form.get('lastname', "Default Lastname"),
+            dob = request.form.get('dob', "1/1/1970")
+        )
         db.session.add(newUser)
         db.session.commit()
         return jsonify({"Status": True, "userID": newUser.userID}), 201
     except Exception as e:
         logger.error(f"Error registering user: {e}")
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
+
 
 @mainBluePrint.route("/setuserinfo", methods=["POST"])
 def setUserInfo():
