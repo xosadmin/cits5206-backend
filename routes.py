@@ -86,9 +86,6 @@ def doRegister():
             userID=uuidGen(),
             username=username,
             password=md5Calc(password),
-            firstname = request.form.get('firstname'),
-            lastname = request.form.get('lastname'),
-            dob = request.form.get('dob')
         )
         db.session.add(newUser)
         db.session.commit()
