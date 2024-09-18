@@ -3,7 +3,7 @@ from operator import and_
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import *
 from werkzeug.utils import secure_filename
-from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory, ResetTokens
+from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory, ResetTokens, Interests, UserInterest
 from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire, deleteFile, passwordGen
 from mailsend import sendmail, pswdEmailGen, finalpswdEmailGen
 import logging
@@ -108,6 +108,23 @@ def setUserInfo():
         db.session.execute(query)
         db.session.commit()
         return jsonify({"Status": True, "userID": userID})
+    
+@mainBluePrint.route("/setuserinterest", methods=["POST"])
+def setUserInterest():
+    userID = request.form.get('userID', None)
+    interests = request.form.get('interests', None)
+    if userID and interests:
+        splitInterest = interests.split(",") if "," in interests else [interests]
+        interest_queries = [
+            UserInterest(userID=userID, interestID=item)
+            for item in splitInterest
+        ]
+        db.session.add_all(interest_queries)
+        db.session.commit()
+        return jsonify({"Status": True, "userID": userID})
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
 
 @mainBluePrint.route("/changepass", methods=["POST"])
 def changePswd():

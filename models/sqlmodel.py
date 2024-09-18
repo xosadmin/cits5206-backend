@@ -49,6 +49,18 @@ class Podcasts(db.Model):
     podUrl = db.Column(db.String(512), nullable=False)
     podDuration = db.Column(db.Integer, nullable=False, default=0)
     updateDate = db.Column(db.String(256), nullable=False)
+    interestID = db.Column(db.String(255), db.ForeignKey('interests.interestID'), nullable=False, default="0")
+
+class Interests(db.Model):
+    __tablename__ = "interests"
+    interestID = db.Column(db.String(256), primary_key=True, default=uuidGen)
+    interestName = db.Column(db.String(256), nullable=False)
+
+class UserInterest(db.Model):
+    __tablename__ = "userinterest"
+    transactionID = db.Column(db.String(256), primary_key=True, default=uuidGen)
+    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+    interestID = db.Column(db.String(255), db.ForeignKey('interests.interestID'), nullable=False, default="0")
 
 class Snippets(db.Model):
     __tablename__ = 'snippets'

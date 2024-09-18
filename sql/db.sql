@@ -35,8 +35,38 @@ CREATE TABLE `podcasts` (
     `podUrl` VARCHAR(512) NOT NULL,
     `podDuration` INT NOT NULL DEFAULT 0,
     `updateDate` VARCHAR(256) NOT NULL,
+    `interestID` VARCHAR(256) NOT NULL,
     CONSTRAINT `podcastsFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`),
-    CONSTRAINT `podcastsFK2` FOREIGN KEY (`categoryID`) REFERENCES `podCategory`(`categoryID`)
+    CONSTRAINT `podcastsFK2` FOREIGN KEY (`categoryID`) REFERENCES `podCategory`(`categoryID`),
+    CONSTRAINT `podcastsFK3` FOREIGN KEY (`interestID`) REFERENCES `interests`(`interestID`)
+);
+
+CREATE TABLE `interests` (
+    `interestID` VARCHAR(256) PRIMARY KEY,
+    `interestName` VARCHAR(256) NOT NULL
+);
+
+INSERT INTO `interests` (`interestID`, `interestName`) VALUES
+    ('0', 'No preference'),
+    ('1', 'Art'),
+    ('2', 'Music'),
+    ('3', 'Comedy'),
+    ('4', 'TV'),
+    ('5', 'Government'),
+    ('6', 'Sports'),
+    ('7', 'Crypto'),
+    ('8', 'Culture'),
+    ('9', 'Society'),
+    ('10', 'Business'),
+    ('11', 'Health'),
+    ('12', 'Education');
+
+CREATE TABLE userinterest (
+    transactionID VARCHAR(256) PRIMARY KEY,
+    userID VARCHAR(256) NOT NULL,
+    interestID VARCHAR(255) NOT NULL DEFAULT '0',
+    CONSTRAINT `uiFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`),
+    CONSTRAINT `uiFK2` FOREIGN KEY (`interestID`) REFERENCES `interests`(`interestID`)
 );
 
 -- Create `notes` table
