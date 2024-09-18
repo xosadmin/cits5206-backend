@@ -9,7 +9,8 @@ CREATE TABLE `users` (
 );
 
 -- Add a test admin user with password admin
-INSERT INTO `users` VALUES ("0","admin",MD5("admin"),"admin");
+INSERT INTO `users` (`userID`, `username`, `password`, `firstname`, `lastname`, `dob`)
+VALUES ("0", "admin", MD5("admin"), "admin", "admin", "01/01/1970");
 
 -- Create `tokens` table
 CREATE TABLE `tokens` (
