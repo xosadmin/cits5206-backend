@@ -115,33 +115,41 @@ def setUserInterest():
     userID = request.form.get('userID')
     interests = request.form.get('interests')
 
+    # Validate required fields
     if not tokenID or not userID or not interests:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+        return jsonify({"Status": False, "Detailed Info": "Missing tokenID, userID, or interests"}), 400
 
-    # Validate token and get userID
+    # Validate token and get the userID from the token
     user_id_from_token = mapTokenUser(tokenID)
-    if not user_id_from_token or user_id_from_token != userID:
-        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"}), 401
+    if not user_id_from_token:
+        return jsonify({"Status": False, "Detailed Info": "Invalid or expired token"}), 401
 
+    if user_id_from_token != userID:
+        return jsonify({"Status": False, "Detailed Info": "Token does not match userID"}), 401
+
+    # Split interests and check if they exist
     interest_ids = interests.split(",")
     try:
         for interest_id in interest_ids:
             # Check if interest exists
-            interest = Interests.query.filter_by(interestID=interest_id).first()
+            interest = Interests.query.filter_by(interestID=interest_id.strip()).first()
             if not interest:
                 return jsonify({"Status": False, "Detailed Info": f"Interest ID {interest_id} does not exist"}), 400
 
+            # Add user interest if valid
             new_user_interest = UserInterest(
                 transactionID=uuidGen(),
                 userID=userID,
-                interestID=interest_id
+                interestID=interest_id.strip()
             )
             db.session.add(new_user_interest)
 
         db.session.commit()
-        return jsonify({"Status": True}), 200
+        return jsonify({"Status": True, "Detailed Info": "User interests updated successfully"}), 200
+
     except Exception as e:
         logger.error(f"Error setting user interests: {e}")
+        db.session.rollback()  # Rollback in case of an error
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
 
 @mainBluePrint.route("/changepass", methods=["POST"])
@@ -358,7 +366,6 @@ def add_podcast():
 
     try:
         podID = uuidGen()
-        # Secure the filename to prevent directory traversal attacks
         stored_filename = podID + ".mp3"
         upload_path = os.path.join('static', 'podcasts', stored_filename)
         podUrl = readConf("systemConfig","hostname") + "/" + upload_path
@@ -376,27 +383,38 @@ def add_podcast():
         )
         db.session.add(newPodcast)
         db.session.commit()
-        return jsonify({"Status": True, "PodcastID": newPodcast.podID})
+        return jsonify({"Status": True, "PodcastID": newPodcast.podID}), 201  # <- Ensure status 201 is returned here
     except Exception as e:
         logger.error(f"Error uploading file: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/deletepodcast", methods=["POST"])
 def delete_podcast():
-    tokenContent = request.form.get('tokenID',None)
-    podID = request.form.get('podID',None)
+    tokenContent = request.form.get('tokenID', None)
+    podID = request.form.get('podID', None)
     userID = mapTokenUser(tokenContent)
 
+    logger.info(f"Delete request received: tokenID={tokenContent}, podID={podID}, userID={userID}")
+
     if not userID or not podID:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+        logger.error("Invalid userID or podID")
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 401
 
     try:
+        podcast = Podcasts.query.filter(Podcasts.podID == podID).first()
+        if not podcast:
+            logger.error(f"Podcast with ID {podID} not found")
+            return jsonify({"Status": False, "Detailed Info": "Podcast not found"}), 400
+
         Podcasts.query.filter(Podcasts.podID == podID).delete()
         db.session.commit()
+
         if deleteFile('podcasts', f'{podID}.mp3'):
-            return jsonify({"Status": True})
+            logger.info(f"Podcast with ID {podID} deleted successfully")
+            return jsonify({"Status": True}), 200
         else:
-            return jsonify({"Status": False, "Detailed Info": "The podcast cannot be deleted"}), 400
+            logger.error("Failed to delete podcast file")
+            return jsonify({"Status": False, "Detailed Info": "The podcast file cannot be deleted"}), 400
     except Exception as e:
         logger.error(f"Error deleting podcast: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
