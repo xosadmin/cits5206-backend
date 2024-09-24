@@ -111,20 +111,38 @@ def setUserInfo():
     
 @mainBluePrint.route("/setuserinterest", methods=["POST"])
 def setUserInterest():
-    userID = request.form.get('userID', None)
-    interests = request.form.get('interests', None)
-    if userID and interests:
-        splitInterest = interests.split(",") if "," in interests else [interests]
-        interest_queries = [
-            UserInterest(userID=userID, interestID=item)
-            for item in splitInterest
-        ]
-        db.session.add_all(interest_queries)
-        db.session.commit()
-        return jsonify({"Status": True, "userID": userID})
-    else:
+    tokenID = request.form.get('tokenID')
+    userID = request.form.get('userID')
+    interests = request.form.get('interests')
+
+    if not tokenID or not userID or not interests:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
+    # Validate token and get userID
+    user_id_from_token = mapTokenUser(tokenID)
+    if not user_id_from_token or user_id_from_token != userID:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"}), 401
+
+    interest_ids = interests.split(",")
+    try:
+        for interest_id in interest_ids:
+            # Check if interest exists
+            interest = Interests.query.filter_by(interestID=interest_id).first()
+            if not interest:
+                return jsonify({"Status": False, "Detailed Info": f"Interest ID {interest_id} does not exist"}), 400
+
+            new_user_interest = UserInterest(
+                transactionID=uuidGen(),
+                userID=userID,
+                interestID=interest_id
+            )
+            db.session.add(new_user_interest)
+
+        db.session.commit()
+        return jsonify({"Status": True}), 200
+    except Exception as e:
+        logger.error(f"Error setting user interests: {e}")
+        return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
 
 @mainBluePrint.route("/changepass", methods=["POST"])
 def changePswd():
