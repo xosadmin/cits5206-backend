@@ -448,16 +448,25 @@ def resetPswdSt1():
             try:
                 userid = query.userID
                 token = uuidGen()
-                dateCreated = getTime()
-                reset_token = ResetTokens(userid=userid, token=token, dateCreated=dateCreated, used=0)
+                dateCreated = getTime(readConf("systemConfig","timezone"))
+                reset_token = ResetTokens(userID=userid, token=token, dateCreated=dateCreated, used=0)
                 db.session.add(reset_token)
                 db.session.commit()
-                pswdEmailGen(token, username)
-                sendmail(username, "Password Reset Confirmation", f"templates/resetpassword-{token}.html")
+
+                pswdEmailGen(token, username)  # Assuming this generates email content
+
+                # Try sending the email and catch FileNotFoundError if the template doesn't exist
+                template_path = f"templates/resetpassword-{token}.html"
+                try:
+                    sendmail(username, "Password Reset Confirmation", template_path)
+                except FileNotFoundError as e:
+                    logger.error(f"Error: Template not found for token {token}: {str(e)}")
+                    return jsonify({"Status": False, "Detailed Info": f"Template not found at {template_path}"}), 500
+
                 return jsonify({"Status": True, "Detailed Info": "Reset Password Mail Sent"})
             except Exception as e:
                 db.session.rollback()
-                print(f'Error while sending email: {e}')
+                logger.error(f"Error while sending email: {str(e)}")
                 return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
         else:
             return jsonify({"Status": False, "Detailed Info": "Invalid Username"}), 400
