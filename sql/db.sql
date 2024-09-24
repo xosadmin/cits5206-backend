@@ -12,14 +12,26 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`userID`, `username`, `password`, `firstname`, `lastname`, `dob`)
 VALUES ("0", "admin", MD5("admin"), "admin", "admin", "01/01/1970");
 
--- Create `tokens` table
-CREATE TABLE `tokens` (
-    `tokenID` VARCHAR(256) PRIMARY KEY,
-    `userID` VARCHAR(256) NOT NULL,
-    `token` VARCHAR(256) NOT NULL UNIQUE,
-    `dateIssue` VARCHAR(256) NOT NULL,
-    CONSTRAINT `tokensFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`)
+-- Create `interests` table
+CREATE TABLE `interests` (
+    `interestID` VARCHAR(256) PRIMARY KEY,
+    `interestName` VARCHAR(256) NOT NULL
 );
+
+INSERT INTO `interests` (`interestID`, `interestName`) VALUES
+    ('0', 'No preference'),
+    ('1', 'Art'),
+    ('2', 'Music'),
+    ('3', 'Comedy'),
+    ('4', 'TV'),
+    ('5', 'Government'),
+    ('6', 'Sports'),
+    ('7', 'Crypto'),
+    ('8', 'Culture'),
+    ('9', 'Society'),
+    ('10', 'Business'),
+    ('11', 'Health'),
+    ('12', 'Education');
 
 -- Create `podCategory` table
 CREATE TABLE `podCategory` (
@@ -42,32 +54,20 @@ CREATE TABLE `podcasts` (
     CONSTRAINT `podcastsFK3` FOREIGN KEY (`interestID`) REFERENCES `interests`(`interestID`)
 );
 
--- Create `interests` table
-CREATE TABLE `interests` (
-    `interestID` VARCHAR(256) PRIMARY KEY,
-    `interestName` VARCHAR(256) NOT NULL
+-- Create `tokens` table
+CREATE TABLE `tokens` (
+    `tokenID` VARCHAR(256) PRIMARY KEY,
+    `userID` VARCHAR(256) NOT NULL,
+    `token` VARCHAR(256) NOT NULL UNIQUE,
+    `dateIssue` VARCHAR(256) NOT NULL,
+    CONSTRAINT `tokensFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`)
 );
-
-INSERT INTO `interests` (`interestID`, `interestName`) VALUES
-    ('0', 'No preference'),
-    ('1', 'Art'),
-    ('2', 'Music'),
-    ('3', 'Comedy'),
-    ('4', 'TV'),
-    ('5', 'Government'),
-    ('6', 'Sports'),
-    ('7', 'Crypto'),
-    ('8', 'Culture'),
-    ('9', 'Society'),
-    ('10', 'Business'),
-    ('11', 'Health'),
-    ('12', 'Education');
 
 -- Create `userinterest` table
 CREATE TABLE userinterest (
     transactionID VARCHAR(256) PRIMARY KEY,
     userID VARCHAR(256) NOT NULL,
-    interestID VARCHAR(255) NOT NULL DEFAULT '0',
+    interestID VARCHAR(256) NOT NULL DEFAULT '0',
     CONSTRAINT `uiFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`),
     CONSTRAINT `uiFK2` FOREIGN KEY (`interestID`) REFERENCES `interests`(`interestID`)
 );
