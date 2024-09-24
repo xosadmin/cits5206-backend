@@ -168,14 +168,17 @@ def addSnippet():
 
 @mainBluePrint.route("/addnote", methods=["POST"])
 def doaddnote():
-    tokenContent = request.form.get('tokenID',None)
-    content = request.form.get('content',None)
-    podid = request.form.get('podid',None)
+    tokenContent = request.form.get('tokenID', None)
+    content = request.form.get('content', None)
+    podid = request.form.get('podid', None)
 
     if not tokenContent or not content or not podid:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
     userID = mapTokenUser(tokenContent)
+    if not userID:
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"}), 401  # Ensure the correct response for invalid token
+
     noteid = uuidGen()
     datecreated = getTime(readConf("systemConfig", "timezone"))
 
@@ -183,7 +186,7 @@ def doaddnote():
         newNote = Notes(noteID=noteid, userID=userID, dateCreated=datecreated, content=content, podID=podid)
         db.session.add(newNote)
         db.session.commit()
-        return jsonify({"Status": True, "noteID": noteid})
+        return jsonify({"Status": True, "noteID": noteid}), 201
     except Exception as e:
         logger.error(f"Error adding note: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
