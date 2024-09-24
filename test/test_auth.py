@@ -106,7 +106,7 @@ class TestAuth(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         data = response.get_json()
         self.assertFalse(data['Status'])
-
+        
     def test_setuserinfo_success(self):
         """Test setting user info successfully."""
         # Log in to get the token
