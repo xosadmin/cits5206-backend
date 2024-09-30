@@ -11,7 +11,7 @@ WORKDIR $APP_DIR
 
 RUN git clone $GIT_REPO $APP_DIR
 
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --break-system-packages
 
 ## How to build a docker container based on SDK above?
 # 1. Using command to build docker image: docker build -t cits5206-backend .
