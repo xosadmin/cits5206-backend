@@ -13,8 +13,8 @@ def readFile(path):
         print(e)
         return None
     
-def pswdEmailGen(tokenID,username):
-    urlHead = readConf("systemConfig","hostname")
+def pswdEmailGen(tokenID, username):
+    urlHead = readConf("systemConfig", "hostname")
     resetLink = urlHead + "/confirmreset/" + tokenID
     content = f"""
     Dear {username},
@@ -32,16 +32,15 @@ def pswdEmailGen(tokenID,username):
     Best regards,
     """
     try:
-        file = open("template/resetpassword-"+tokenID+".html","a")
-        for item in content:
-            file.write(item + "\n")
-        file.close()
+        file_path = os.path.join("templates", f"resetpassword-{tokenID}.html")
+        with open(file_path, "w") as file:
+            file.write(content)
         return True
     except Exception as e:
-        print("Error: " + e)
+        print(f"Error: {e}")
         return False
     
-def finalpswdEmailGen(initPassword,username,tokenID):
+def finalpswdEmailGen(initPassword, username, tokenID):
     content = f"""
     Dear {username},
 
@@ -50,15 +49,14 @@ def finalpswdEmailGen(initPassword,username,tokenID):
     Best regards,
     """
     try:
-        if os.path.exists("template/resetpasswordcomplete-"+tokenID+".html"):
-            os.remove("template/resetpasswordcomplete-"+tokenID+".html")
-        file = open("template/resetpasswordcomplete-"+tokenID+".html","a")
-        for item in content:
-            file.write(item + "\n")
-        file.close()
+        file_path = os.path.join("templates", f"resetpasswordcomplete-{tokenID}.html")
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        with open(file_path, "w") as file:
+            file.write(content)
         return True
     except Exception as e:
-        print("Error: " + e)
+        print(f"Error: {e}")
         return False
 
 def sendmail(receiver, subject, contentTempPath):
