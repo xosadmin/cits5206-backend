@@ -487,12 +487,12 @@ def resetPswdSt1():
             try:
                 userid = query.userID
                 token = uuidGen()
-                dateCreated = getTime(readConf("systemConfig","timezone"))
+                dateCreated = getTime(tz=readConf("systemConfig","timezone"))
                 reset_token = ResetTokens(userID=userid, token=token, dateCreated=dateCreated, used=0)
                 db.session.add(reset_token)
                 db.session.commit()
 
-                pswdEmailGen(token, username)  # Assuming this generates email content
+                pswdEmailGen(token, username)
 
                 # Try sending the email and catch FileNotFoundError if the template doesn't exist
                 template_path = f"templates/resetpassword-{token}.html"
