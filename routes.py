@@ -111,21 +111,16 @@ def setUserInfo():
     
 @mainBluePrint.route("/setuserinterest", methods=["POST"])
 def setUserInterest():
-    tokenID = request.form.get('tokenID')
     userID = request.form.get('userID')
     interests = request.form.get('interests')
 
     # Validate required fields
-    if not tokenID or not userID or not interests:
-        return jsonify({"Status": False, "Detailed Info": "Missing tokenID, userID, or interests"}), 400
-
-    # Validate token and get the userID from the token
-    user_id_from_token = mapTokenUser(tokenID)
-    if not user_id_from_token:
-        return jsonify({"Status": False, "Detailed Info": "Invalid or expired token"}), 401
-
-    if user_id_from_token != userID:
-        return jsonify({"Status": False, "Detailed Info": "Token does not match userID"}), 401
+    if not userID or not interests:
+        return jsonify({"Status": False, "Detailed Info": "Missing userID or interests"}), 400
+    
+    testUser = Users.query.filter(Users.userID == userID).first()
+    if not testUser:
+        return jsonify({"Status": False, "Detailed Info": "Cannot find the user."}), 400
 
     # Split interests and check if they exist
     interest_ids = interests.split(",")
