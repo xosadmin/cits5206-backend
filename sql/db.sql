@@ -83,22 +83,22 @@ CREATE TABLE `notes` (
     CONSTRAINT `notesFK2` FOREIGN KEY (`podID`) REFERENCES `podcasts`(`podID`)
 );
 
--- Create `library` table
-CREATE TABLE `library` (
-    `libraryID` VARCHAR(256) PRIMARY KEY,
-    `userID` VARCHAR(256) DEFAULT '0' NOT NULL,
-    `libraryName` VARCHAR(256) NOT NULL,
-    CONSTRAINT `libraryFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`)
-);
+-- -- Create `library` table
+-- CREATE TABLE `library` (
+--     `libraryID` VARCHAR(256) PRIMARY KEY,
+--     `userID` VARCHAR(256) DEFAULT '0' NOT NULL,
+--     `libraryName` VARCHAR(256) NOT NULL,
+--     CONSTRAINT `libraryFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`)
+-- );
 
 -- Create `subscriptions` table
 CREATE TABLE `subscriptions` (
     `subID` VARCHAR(256) PRIMARY KEY,
     `userID` VARCHAR(256) NOT NULL,
-    `libID` VARCHAR(256) NOT NULL,
+    `title` VARCHAR(256) NOT NULL,
+    `rssUrl` VARCHAR(256) NOT NULL,
     `dateOfSub` VARCHAR(256) NOT NULL,
-    CONSTRAINT `subscrFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`),
-    CONSTRAINT `subscrFK2` FOREIGN KEY (`libID`) REFERENCES `library`(`libraryID`)
+    CONSTRAINT `subscrFK1` FOREIGN KEY (`userID`) REFERENCES `users`(`userID`)
 );
 
 -- Create `snippets` table
