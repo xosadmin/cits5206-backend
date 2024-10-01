@@ -277,7 +277,9 @@ def list_subscriptions():
         subscriptions = Subscriptions.query.filter(Subscriptions.userID == userID).all()
         result = [
             {
-                "LibraryID": sub.libID,  # Ensure this matches the logic used in the test
+                "Title": sub.title,
+                "imageURL": sub.imageURL,
+                "rssUrl": sub.rssUrl,
                 "SubscriptionDate": sub.dateOfSub
             }
             for sub in subscriptions
@@ -309,22 +311,26 @@ def add_subscription():
     except Exception as e:
         logger.error(f"Error adding subscription: {e}")
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
+    
+@mainBluePrint.route("/uploadopml", methods=["POST"])
+def uploadopml():
+    pass
 
-@mainBluePrint.route("/listlibrary", methods=["POST"])
-def listlibrary():
-    tokenContent = request.form.get('tokenID',None)
-    userID = mapTokenUser(tokenContent)
+# @mainBluePrint.route("/listlibrary", methods=["POST"])
+# def listlibrary():
+#     tokenContent = request.form.get('tokenID',None)
+#     userID = mapTokenUser(tokenContent)
 
-    if not userID:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+#     if not userID:
+#         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
-    try:
-        query = Library.query.filter(Library.userID == userID).all()
-        result = [{"LibraryID": item.libraryID, "libraryName": item.libraryName} for item in query]
-        return jsonify(result)
-    except Exception as e:
-        logger.error(f"Error listing library: {e}")
-        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+#     try:
+#         query = Library.query.filter(Library.userID == userID).all()
+#         result = [{"LibraryID": item.libraryID, "libraryName": item.libraryName} for item in query]
+#         return jsonify(result)
+#     except Exception as e:
+#         logger.error(f"Error listing library: {e}")
+#         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
 
 @mainBluePrint.route("/listcategory", methods=["POST"])
 def listcategory():

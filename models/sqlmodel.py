@@ -27,17 +27,20 @@ class Notes(db.Model):
     dateCreated = db.Column(db.String(256), nullable=False)
     content = db.Column(db.Text, nullable=False)
 
-class Library(db.Model):
-    __tablename__ = 'library'
-    libraryID = db.Column(db.String(256), primary_key=True, default=uuidGen)
-    userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
-    libraryName = db.Column(db.String(256), nullable=False)
+# class Library(db.Model):
+#     __tablename__ = 'library'
+#     libraryID = db.Column(db.String(256), primary_key=True, default=uuidGen)
+#     userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
+#     libraryName = db.Column(db.String(256), nullable=False)
 
 class Subscriptions(db.Model):
     __tablename__ = 'subscriptions'
     subID = db.Column(db.String(256), primary_key=True, default=uuidGen)
     userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
-    libID = db.Column(db.String(256), db.ForeignKey('library.libraryID'), nullable=False)
+    title = db.Column(db.String(256), nullable=False)
+    imageURL = db.Column(db.String(256), nullable=False)
+    rssUrl = db.Column(db.String(256), nullable=False)
+    # libID = db.Column(db.String(256), db.ForeignKey('library.libraryID'), nullable=False)
     dateOfSub = db.Column(db.String(256), nullable=False)
 
 class Podcasts(db.Model):
