@@ -38,7 +38,6 @@ class Subscriptions(db.Model):
     subID = db.Column(db.String(256), primary_key=True, default=uuidGen)
     userID = db.Column(db.String(256), db.ForeignKey('users.userID'), nullable=False)
     title = db.Column(db.String(256), nullable=False)
-    imageURL = db.Column(db.String(256), nullable=False)
     rssUrl = db.Column(db.String(256), nullable=False)
     # libID = db.Column(db.String(256), db.ForeignKey('library.libraryID'), nullable=False)
     dateOfSub = db.Column(db.String(256), nullable=False)

@@ -3,9 +3,10 @@ from operator import and_
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import *
 from werkzeug.utils import secure_filename
-from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, Library, PodCategory, ResetTokens, Interests, UserInterest
+from models.sqlmodel import db, Users, Tokens, Notes, Snippets, Podcasts, Subscriptions, PodCategory, ResetTokens, Interests, UserInterest
 from utils import readConf, md5Calc, uuidGen, getTime, CheckIfExpire, deleteFile, passwordGen
 from mailsend import sendmail, pswdEmailGen, finalpswdEmailGen
+from xml.etree import ElementTree as ET
 import logging
 
 logger = logging.getLogger(__name__)
@@ -278,9 +279,8 @@ def list_subscriptions():
         result = [
             {
                 "Title": sub.title,
-                "imageURL": sub.imageURL,
                 "rssUrl": sub.rssUrl,
-                "SubscriptionDate": sub.dateOfSub
+                "Date": sub.dateOfSub
             }
             for sub in subscriptions
         ]
@@ -289,32 +289,66 @@ def list_subscriptions():
         return jsonify({"Status": False, "Detailed Info": "Unauthenticated"})
 
 
-@mainBluePrint.route("/addsubscription", methods=["POST"])
-def add_subscription():
-    tokenContent = request.form.get('tokenID',None)
-    userID = mapTokenUser(tokenContent)
-    libID = request.form.get('libID',None)
+# @mainBluePrint.route("/addsubscription", methods=["POST"])
+# def add_subscription():
+#     tokenContent = request.form.get('tokenID',None)
+#     userID = mapTokenUser(tokenContent)
+#     libID = request.form.get('subscriptionID',None)
     
-    if not userID or not libID:
-        logger.error(f"Missing userID or libID: userID={userID}, libID={libID}")
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+#     if not userID or not libID:
+#         logger.error(f"Missing userID or libID: userID={userID}, libID={libID}")
+#         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
-    try:
-        newSubscription = Subscriptions(
-            userID=userID,
-            libID=libID,
-            dateOfSub=getTime(readConf("systemConfig", "timezone"))
-        )
-        db.session.add(newSubscription)
-        db.session.commit()
-        return jsonify({"Status": True})
-    except Exception as e:
-        logger.error(f"Error adding subscription: {e}")
-        return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
+#     try:
+#         newSubscription = Subscriptions(
+#             userID=userID,
+#             libID=libID,
+#             dateOfSub=getTime(readConf("systemConfig", "timezone"))
+#         )
+#         db.session.add(newSubscription)
+#         db.session.commit()
+#         return jsonify({"Status": True})
+#     except Exception as e:
+#         logger.error(f"Error adding subscription: {e}")
+#         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
     
 @mainBluePrint.route("/uploadopml", methods=["POST"])
 def uploadopml():
-    pass
+    userID = request.form.get('userID')
+    if not userID:
+        return jsonify({"error": "User ID is required"}), 400
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    
+    if file and file.filename.endswith('.opml'):
+        try:
+            tree = ET.parse(file)
+            root = tree.getroot()
+            nowDate = getTime(tz=readConf("systemConfig","timezone"))
+
+            subscriptions = []
+
+            for outline in root.findall(".//outline"):
+                title = outline.get('text')
+                rssUrl = outline.get('xmlUrl')
+                
+                if title and rssUrl:
+                    new_subscription = Subscriptions(userID=userID, title=title, rssUrl=rssUrl, dateOfSub=nowDate)
+                    db.session.add(new_subscription)
+                    subscriptions.append({"title": title, "xmlurl": rssUrl})
+            
+            db.session.commit()
+            return jsonify({"subscriptions": subscriptions}), 200
+            
+        except ET.ParseError:
+            return jsonify({"Status": False, "Detailed Info":  "Invalid OPML format"}), 400
+    else:
+        return jsonify({"Status": False, "Detailed Info": "Invalid file format. Please upload an OPML file."}), 400
 
 # @mainBluePrint.route("/listlibrary", methods=["POST"])
 # def listlibrary():
