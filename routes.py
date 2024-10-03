@@ -42,24 +42,35 @@ def index():
 
 @mainBluePrint.route("/login", methods=["POST"])
 def doLogin():
-    username = request.form.get('username',None)
-    password = request.form.get('password',None)
-    if not username or not password:
-        logger.warning("Invalid parameters for login")
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+    username = request.form.get('username', None)
+    password = request.form.get('password', None)
+
+
+    if not username:
+        return jsonify({"Status": False, "Detailed Info": "Missing username"}), 400
+    if not password:
+        return jsonify({"Status": False, "Detailed Info": "Missing password"}), 400
 
     try:
+
         md5password = md5Calc(password)
+        
+
         query = Users.query.filter(and_(Users.username == username, Users.password == md5password)).first()
+        
         if query:
+
             token = uuidGen()
-            newToken = Tokens(tokenID=token, userID=query.userID, token=token, dateIssue=getTime(readConf("systemConfig","timezone")))
+            newToken = Tokens(tokenID=token, userID=query.userID, token=token, dateIssue=getTime(readConf("systemConfig", "timezone")))
             db.session.add(newToken)
             db.session.commit()
+            
+            logger.info(f"User {username} logged in successfully.")
             return jsonify({"Status": True, "Token": token}), 201
         else:
-            logger.warning(f"Login failed for user {username}")
-            return jsonify({"Status": False, "Detailed Info": "Wrong username or password"}), 401
+            logger.warning(f"Login attempt failed for user {username}.")
+            return jsonify({"Status": False, "Detailed Info": "Invalid username or password"}), 401
+    
     except Exception as e:
         logger.error(f"Error during login: {e}")
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
@@ -150,18 +161,23 @@ def setUserInterest():
 
 @mainBluePrint.route("/changepass", methods=["POST"])
 def changePswd():
-    tokenContent = request.form.get('tokenID',None)
+    tokenContent = request.form.get('tokenID', None)
+    password = request.form.get('password', None)
     userID = mapTokenUser(tokenContent)
-    password = request.form.get('password',None)
     
-    if not userID or not password:
-        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
-
+    if not userID:
+        logger.warning(f"Invalid token: {tokenContent}")
+        return jsonify({"Status": False, "Detailed Info": "Invalid or expired token"}), 401
+    
+    if not password:
+        return jsonify({"Status": False, "Detailed Info": "Missing password"}), 400
+    
     try:
         md5password = md5Calc(password)
         db.session.execute(update(Users).filter(Users.userID == userID).values(password=md5password))
         db.session.commit()
-        return jsonify({"Status": True, "userID": userID})
+        return jsonify({"Status": True, "userID": userID}), 200
+    
     except Exception as e:
         logger.error(f"Error changing password: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
