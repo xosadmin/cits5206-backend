@@ -223,24 +223,34 @@ def doaddnote():
     content = request.form.get('content', None)
     podid = request.form.get('podid', None)
 
+    # Validate if all required parameters are present
     if not tokenContent or not content or not podid:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
+    # Validate the token and authenticate the user
     userID = mapTokenUser(tokenContent)
     if not userID:
-        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"}), 401  # Ensure the correct response for invalid token
+        return jsonify({"Status": False, "Detailed Info": "Unauthenticated"}), 401  # Invalid or expired token
 
+    # Check if the provided podcast ID exists
+    podcast = Podcasts.query.filter_by(podID=podid).first()
+    if not podcast:
+        return jsonify({"Status": False, "Detailed Info": "Podcast not found"}), 404  # Podcast not found
+
+    # Generate unique note ID and current timestamp
     noteid = uuidGen()
     datecreated = getTime(readConf("systemConfig", "timezone"))
 
     try:
+        # Create and add the new note to the database
         newNote = Notes(noteID=noteid, userID=userID, dateCreated=datecreated, content=content, podID=podid)
         db.session.add(newNote)
         db.session.commit()
-        return jsonify({"Status": True, "noteID": noteid}), 201
+        return jsonify({"Status": True, "noteID": noteid}), 201  # Successful note creation
     except Exception as e:
         logger.error(f"Error adding note: {e}")
-        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+        return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500  # Internal server error
+
 
 @mainBluePrint.route("/listnotes", methods=["POST"])
 def get_notes():
