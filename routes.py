@@ -197,25 +197,45 @@ def changePswd():
 
 @mainBluePrint.route("/addsnippet", methods=["POST"])
 def addSnippet():
-    tokenContent = request.form.get('tokenID',None)
-    content = request.form.get('content',None)
-    podid = request.form.get('podid',None)
+    tokenContent = request.form.get('tokenID', None)
+    content = request.form.get('content', None)
+    podid = request.form.get('podID', None)  # Change from 'podid' to 'podID' for consistency
 
+    # Validate required parameters
     if not tokenContent or not content or not podid:
         return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
 
+    # Validate token and map it to a user
     userID = mapTokenUser(tokenContent)
-    snipID = uuidGen()
+    if not userID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid or expired token"}), 401
+
+    # Check if the podcast exists
+    podcast = Podcasts.query.filter_by(podID=podid).first()
+    if not podcast:
+        return jsonify({"Status": False, "Detailed Info": "Podcast not found"}), 404
+
+    snipID = uuidGen()  # Generate a unique snippet ID
     datecreated = getTime(readConf("systemConfig", "timezone"))
 
     try:
-        newSnippet = Snippets(snipID=snipID, userID=userID, podID=podid, snippetContent=content, dateCreated=datecreated)
+        # Create a new snippet linked to the user and podcast
+        newSnippet = Snippets(
+            snipID=snipID,
+            userID=userID,
+            podID=podid,
+            snippetContent=content,
+            dateCreated=datecreated
+        )
         db.session.add(newSnippet)
         db.session.commit()
-        return jsonify({"Status": True, "SnippetID": snipID})
+
+        return jsonify({"Status": True, "SnippetID": snipID}), 201  # Return 201 for successful creation
+
     except Exception as e:
         logger.error(f"Error adding snippet: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+
 
 @mainBluePrint.route("/addnote", methods=["POST"])
 def doaddnote():
@@ -291,6 +311,32 @@ def get_note_details():
     except Exception as e:
         logger.error(f"Error retrieving note details: {e}")
         return jsonify({"Status": False, "Detailed Info": "Unknown Internal Error Occurred"}), 500
+
+@mainBluePrint.route("/getsnippets", methods=["POST"])
+def getSnippets():
+    tokenContent = request.form.get('tokenID', None)
+    podid = request.form.get('podID', None)
+
+    # Validate required parameters
+    if not tokenContent or not podid:
+        return jsonify({"Status": False, "Detailed Info": "Invalid Parameter(s)"}), 400
+
+    # Validate token
+    userID = mapTokenUser(tokenContent)
+    if not userID:
+        return jsonify({"Status": False, "Detailed Info": "Invalid or expired token"}), 401
+
+    # Check if the podcast exists
+    podcast = Podcasts.query.filter_by(podID=podid).first()
+    if not podcast:
+        return jsonify({"Status": False, "Detailed Info": "Podcast not found"}), 404
+
+    # Retrieve the snippets for the podcast
+    snippets = Snippets.query.filter_by(podID=podid).all()
+    result = [{"SnippetID": snip.snipID, "content": snip.snippetContent} for snip in snippets]
+
+    return jsonify({"Status": True, "Snippets": result}), 200
+
 
 @mainBluePrint.route("/search", methods=["POST"])
 def dosearch():
