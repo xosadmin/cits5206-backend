@@ -16,8 +16,8 @@ def create_app(config_name='default'):
             db_uri = f"mysql+pymysql://{readConf('database', 'username')}:{readConf('database', 'password')}@" \
                      f"{readConf('database', 'host')}:{readConf('database', 'port')}/{readConf('database', 'dbname')}"
         elif config_name == "testing":
-            db_uri = f"mysql+pymysql://{readConf('database', 'username')}:{readConf('database', 'password')}@" \
-                     f"{readConf('database', 'host')}:{readConf('database', 'port')}/testDB"
+            # Use SQLite in-memory database for testing
+            db_uri = "sqlite:///:memory:"
             app.config['TESTING'] = True
         else:
             print("Unknown action.")
@@ -36,6 +36,7 @@ def create_app(config_name='default'):
             db.create_all()
 
     return app
+
 
 app = create_app()
 
