@@ -123,41 +123,54 @@ def setUserInfo():
     
 @mainBluePrint.route("/setuserinterest", methods=["POST"])
 def setUserInterest():
+    tokenContent = request.form.get('tokenID')
     userID = request.form.get('userID')
     interests = request.form.get('interests')
 
-    # Validate required fields
-    if not userID or not interests:
-        return jsonify({"Status": False, "Detailed Info": "Missing userID or interests"}), 400
+    # Validate that token, userID, and interests are provided
+    if not tokenContent or not userID or not interests:
+        return jsonify({"Status": False, "Detailed Info": "Missing token, userID, or interests"}), 400
+
+    # Validate the token (using mapTokenUser to validate token)
+    if not mapTokenUser(tokenContent):
+        return jsonify({"Status": False, "Detailed Info": "Invalid or expired token"}), 401  # Return 401 if token is invalid
     
+    # Check if the user exists in the database
     testUser = Users.query.filter(Users.userID == userID).first()
     if not testUser:
-        return jsonify({"Status": False, "Detailed Info": "Cannot find the user."}), 400
+        return jsonify({"Status": False, "Detailed Info": "User not found."}), 404
 
-    # Split interests and check if they exist
-    interest_ids = interests.split(",")
+    # Split interests into a list and strip whitespace from each item
+    interest_ids = [interest_id.strip() for interest_id in interests.split(",")]
+    
+    # Fetch all valid interests in one query to optimize database interaction
+    valid_interests = Interests.query.filter(Interests.interestID.in_(interest_ids)).all()
+
+    # Check if all provided interests exist in the database
+    if len(valid_interests) != len(interest_ids):
+        missing_ids = set(interest_ids) - {interest.interestID for interest in valid_interests}
+        return jsonify({"Status": False, "Detailed Info": f"Some interest IDs do not exist: {', '.join(missing_ids)}"}), 400
+
     try:
-        for interest_id in interest_ids:
-            # Check if interest exists
-            interest = Interests.query.filter_by(interestID=interest_id.strip()).first()
-            if not interest:
-                return jsonify({"Status": False, "Detailed Info": f"Interest ID {interest_id} does not exist"}), 400
-
-            # Add user interest if valid
+        # Add user interests to the UserInterest table
+        for interest in valid_interests:
             new_user_interest = UserInterest(
                 transactionID=uuidGen(),
                 userID=userID,
-                interestID=interest_id.strip()
+                interestID=interest.interestID
             )
             db.session.add(new_user_interest)
 
+        # Commit the changes to the database
         db.session.commit()
         return jsonify({"Status": True, "Detailed Info": "User interests updated successfully"}), 200
 
     except Exception as e:
+        # Rollback transaction in case of any exception and log the error
         logger.error(f"Error setting user interests: {e}")
-        db.session.rollback()  # Rollback in case of an error
+        db.session.rollback()
         return jsonify({"Status": False, "Detailed Info": "Internal Server Error"}), 500
+
 
 @mainBluePrint.route("/changepass", methods=["POST"])
 def changePswd():
