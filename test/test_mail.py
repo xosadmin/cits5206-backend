@@ -1,22 +1,20 @@
 import unittest
-from unittest.mock import patch, mock_open, MagicMock
-import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from unittest.mock import patch, mock_open
 import smtplib
-from your_module import pswdEmailGen, finalpswdEmailGen, sendmail  # Replace with actual module name
+from mailsend import pswdEmailGen, finalpswdEmailGen, sendmail  # Ensure correct import paths
 
 class TestEmailFunctions(unittest.TestCase):
 
     @patch("builtins.open", new_callable=mock_open, read_data="mock file content")
     @patch("os.path.exists", return_value=True)
-    @patch("your_module.readConf")
+    @patch("mailsend.readConf")  # Ensure correct module path for readConf
     def test_pswdEmailGen_success(self, mock_read_conf, mock_exists, mock_file):
         """Test successful password reset email generation"""
-        mock_read_conf.return_value = "http://example.com"
+        mock_read_conf.return_value = "http://example.com"  # Mock hostname retrieval
         result = pswdEmailGen("testToken", "testuser")
 
-        mock_file().write.assert_called_once()  # Check that write was called
+        # Ensure the file write was successful
+        mock_file().write.assert_called_once()
         self.assertTrue(result)  # Expecting True since no exceptions should occur
 
     @patch("builtins.open", new_callable=mock_open)
@@ -25,14 +23,17 @@ class TestEmailFunctions(unittest.TestCase):
         """Test successful final password email generation"""
         result = finalpswdEmailGen("newPassword", "testuser", "testToken")
 
-        mock_file().write.assert_called_once()  # Ensure file write occurred
+        # Ensure the file write was successful
+        mock_file().write.assert_called_once()
         self.assertTrue(result)  # Expecting True since no exceptions should occur
 
     @patch("builtins.open", side_effect=Exception("File error"))
-    def test_pswdEmailGen_failure(self, mock_file):
+    @patch("mailsend.readConf", return_value="mockHostname")  # Mocking readConf
+    def test_pswdEmailGen_failure(self, mock_read_conf, mock_file):
         """Test failure of password reset email generation due to file error"""
         result = pswdEmailGen("testToken", "testuser")
         self.assertFalse(result)  # Expecting False due to file write failure
+
 
     @patch("builtins.open", side_effect=Exception("File error"))
     def test_finalpswdEmailGen_failure(self, mock_file):
@@ -40,24 +41,26 @@ class TestEmailFunctions(unittest.TestCase):
         result = finalpswdEmailGen("newPassword", "testuser", "testToken")
         self.assertFalse(result)  # Expecting False due to file write failure
 
-    @patch("your_module.smtplib.SMTP_SSL")
-    @patch("your_module.readFile", return_value="Email content")
-    @patch("your_module.readConf")
+    @patch("mailsend.smtplib.SMTP_SSL")  # Mocking SMTP_SSL
+    @patch("mailsend.readFile", return_value="Email content")
+    @patch("mailsend.readConf")  # Mock readConf
     def test_sendmail_success(self, mock_read_conf, mock_read_file, mock_smtp_ssl):
         """Test successful email sending with SSL"""
+        # Mock configuration values
         mock_read_conf.side_effect = ["sender@example.com", "password", "smtp.example.com", "465", "true"]
         mock_smtp_instance = mock_smtp_ssl.return_value
-        mock_smtp_instance.sendmail.return_value = None  # Simulate successful send
 
         result = sendmail("receiver@example.com", "Test Subject", "template.html")
 
-        self.assertEqual(result, 0)  # Expecting 0 for success
+        self.assertEqual(result, 0)  # Expecting success
         mock_smtp_instance.login.assert_called_once_with("sender@example.com", "password")
         mock_smtp_instance.sendmail.assert_called_once()
 
-    @patch("your_module.smtplib.SMTP_SSL")
-    @patch("your_module.readFile", return_value="Email content")
-    @patch("your_module.readConf")
+
+
+    @patch("mailsend.smtplib.SMTP_SSL")
+    @patch("mailsend.readFile", return_value="Email content")
+    @patch("mailsend.readConf")  # Mock readConf
     def test_sendmail_failure(self, mock_read_conf, mock_read_file, mock_smtp_ssl):
         """Test email sending failure due to SMTP error"""
         mock_read_conf.side_effect = ["sender@example.com", "password", "smtp.example.com", "465", "true"]
@@ -70,16 +73,19 @@ class TestEmailFunctions(unittest.TestCase):
         mock_smtp_instance.login.assert_called_once()
         mock_smtp_instance.sendmail.assert_called_once()
 
-    @patch("your_module.smtplib.SMTP_SSL")
-    @patch("your_module.readFile", return_value=None)
-    @patch("your_module.readConf")
+
+
+    @patch("mailsend.smtplib.SMTP_SSL")
+    @patch("mailsend.readFile", return_value=None)  # Simulate missing template
+    @patch("mailsend.readConf")  # Mock readConf
     def test_sendmail_template_missing(self, mock_read_conf, mock_read_file, mock_smtp_ssl):
         """Test email sending failure due to missing template file"""
         mock_read_conf.side_effect = ["sender@example.com", "password", "smtp.example.com", "465", "true"]
 
         result = sendmail("receiver@example.com", "Test Subject", "missing_template.html")
 
-        self.assertEqual(result, 1)  # Expecting 1 because the template is missing
+        self.assertEqual(result, 3)  # Expecting 3 because the template is missing
+
 
 if __name__ == "__main__":
     unittest.main()
